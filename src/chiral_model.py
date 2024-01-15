@@ -6,12 +6,12 @@
 # only sending those back; can change if needed
 
 import numpy as np
+import sys 
 
 # imports from chiral EOS class
-from buqeyenm.src.chiral import Chiral
+from chiral import Chiral
 
 # Taweret import
-import sys 
 sys.path.append('../../Taweret')
 
 from Taweret.core.base_model import BaseModel

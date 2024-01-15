@@ -80,7 +80,7 @@ def setup_rc_params(presentation=False):
 
     # bbox = 'tight' can distort the figure size when saved (that's its purpose).
     # mpl.rc('savefig', transparent=False, bbox='tight', pad_inches=0.04, dpi=350, format='png')
-    mpl.rc('savefig', transparent=False, bbox=None, dpi=400, format='png')
+    #mpl.rc('savefig', transparent=False, bbox=None, dpi=400, format='png')
 
 
 def highlight_nsat(ax, nsat=0.164, zorder=0, band=False):

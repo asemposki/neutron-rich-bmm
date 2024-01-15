@@ -8,7 +8,7 @@
 import numpy as np
 import gsum as gm
 from pqcd_reworked import PQCD
-from buqeyenm.src.truncation_error import Truncation
+from truncation_error import Truncation
 from Taweret.core.base_model import BaseModel
 
 # class

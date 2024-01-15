@@ -4,9 +4,8 @@
 
 # imports and paths
 import numpy as np
-from buqeyenm.src.pqcd import Kurkela
+from pqcd import Kurkela
 import sys
-#sys.path.append('Taweret/')
 
 from Taweret.Taweret.core.base_model import BaseModel
  
