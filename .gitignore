@@ -8,3 +8,6 @@ gsum/
 nuclear-matter-convergence/
 old_notebooks/
 *.csv
+.ipynb_checkpoints/
+.DS_Store
+__pycache__/
