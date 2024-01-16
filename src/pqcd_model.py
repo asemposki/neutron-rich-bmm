@@ -1,6 +1,6 @@
 ### pQCD model class for Taweret
 ### Written by : Alexandra Semposki
-### Last edited : 06 May 2023
+### Last edited : 16 January 2024
 
 # imports and paths
 import numpy as np

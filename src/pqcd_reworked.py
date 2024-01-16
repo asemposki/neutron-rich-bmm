@@ -374,6 +374,38 @@ class PQCD:
         mu2 = -(first + second + third + fourth)/(self.c_0(mu_FG) * secderivP0)
         
         return mu2
+    
+    
+    # pressure equation for P(n) using KLW inversion
+    def pressure_KLW(self, mu_FG):
+        
+        # mu_FG assignment
+        mU_FG = mu_FG[:,None]
+        
+        # calculate order by order pressure
+        pressure_0 = self.c_0(mu_FG) * self.yref(mU_FG)
+        
+        pressure_1 = self.c_1(mu_FG)*self.expQ(mU_FG)*self.yref(mU_FG) + \
+        self.mu_1(mu_FG) * self.c_0(mu_FG) * self.n_FG_mu(mu_FG)
+        
+        pressure_2 = self.c_2(mu_FG)*self.expQ(mU_FG)**2.0*self.yref(mU_FG) + \
+        (self.mu_2(mu_FG) * self.c_0(mu_FG) * self.n_FG_mu(mu_FG) + \
+         0.5 * self.mu_1(mu_FG)**2.0 * (self.Nf * 3.0 * mu_FG**2.0 / np.pi**2.0) + \
+         self.mu_1(mu_FG) * self.c_1(mu_FG) * self.n_FG_mu(mu_FG) * self.expQ(mU_FG))
+        
+        # organise so each order contains the last
+        pressure_LO = pressure_0
+        pressure_NLO = pressure_0 + pressure_1
+        pressure_N2LO = pressure_0 + pressure_1 + pressure_2
+        
+        # stash in dict
+        pressure_n = {
+            "LO": pressure_LO,
+            "NLO":pressure_NLO,
+            "N2LO":pressure_N2LO
+        }
+        
+        return pressure_n
 
     @staticmethod
     def mask_array(array, neg=False, fill_value=None):
