@@ -81,7 +81,7 @@ class Gorda(BaseModel):
                     std_dev[i,j] = 1e10
         
         # KLW pressure call
-        pressure_n = self.gorda.pressure_KLW(mu_FG)
+        pressure_n = self.gorda.pressure_KLW(self.mu_FG)
         
         # put these into an array
         mean = np.array([pressure_n["LO"], pressure_n["NLO"], pressure_n["N2LO"]]).T

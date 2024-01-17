@@ -68,7 +68,6 @@ class PQCD:
                     np.log(2)**2  - (3.0/16.0)*self.delta) * self.Nc**(-1.0) - \
                     (415.0/192.0)*self.Nf**(-1.0) - \
                     (51.0/64.0)*self.Nc**(-2) * self.Nf**(-1.0))
-        print(self.a11, self.a21, self.a22, self.a23)
         
         return None
     

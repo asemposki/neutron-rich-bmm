@@ -75,7 +75,6 @@ class Truncation:
         '''
         
         # mask for values above 40*n0 only (good)
-        print(mu)
         low_bound = next(i for i, val in enumerate(mu)
                                   if val > 0.88616447)
         mu_mask = mu[low_bound:]
