@@ -110,4 +110,4 @@ def speed_of_sound(dens, pressure, edens, scaled=False):
         'upper' : cs2_upper
     }
 
-    return cs2
+    return cs2, edens_int
