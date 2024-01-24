@@ -3,6 +3,8 @@
 *.JPG
 *.npz
 *.txt
+*.ps
+*.eps
 gptools/
 gsum/
 nuclear-matter-convergence/
