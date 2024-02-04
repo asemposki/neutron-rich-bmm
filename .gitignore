@@ -13,3 +13,6 @@ old_notebooks/
 .ipynb_checkpoints/
 .DS_Store
 __pycache__/
+
+# IDE specifics
+.idea/
