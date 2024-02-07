@@ -299,7 +299,7 @@ class PQCD:
         
         # FG chemical potential (mu_FG)
         def f_mu_FG(n, guess):
-            return opt.fsolve(lambda mu_FG : n - self.n_FG_mu(mu_FG), x0 = guess)[0]
+            return opt.fsolve(lambda mu_FG : n - self.n_FG_mu(mu_FG), x0 = guess, xtol=1e-10)[0]
         
         if n_mu is None:
             n_mu = np.linspace(0.01, 0.8, 1000)  # n_q right now -> 3*n_B = (0.0, 1.25) GeV^3

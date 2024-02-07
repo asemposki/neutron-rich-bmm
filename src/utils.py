@@ -97,6 +97,11 @@ def speed_of_sound(dens, pressure, edens, scaled=False):
     dedn_mean = np.gradient(edens_int['mean'], dens)
     dedn_lower = np.gradient(edens_int['lower'], dens)
     dedn_upper = np.gradient(edens_int['upper'], dens)
+    
+    # calculate the chemical potential
+    mu_mean = (en_mean + p_mean)/dens
+    mu_lower = (en_lower + p_low)/dens
+    mu_upper = (en_upper + p_high)/dens
 
     # calculate speed of sound (think more about uncertainties)
     cs2_mean = dpdn_mean / dedn_mean
@@ -109,5 +114,12 @@ def speed_of_sound(dens, pressure, edens, scaled=False):
         'lower' : cs2_lower,
         'upper' : cs2_upper
     }
+    
+    # collect mu into dict and return
+    mu_dict = {
+        'mean':mu_mean,
+        'lower':mu_lower,
+        'upper':mu_upper
+    }
 
-    return cs2, edens_int
+    return cs2, edens_int, mu_dict
