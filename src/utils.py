@@ -2,9 +2,10 @@
 import numpy as np
 import scipy.integrate as scint
 from scipy.interpolate import interp1d
+import numdifftools as ndt
 
 # define the speed of sound function 
-def speed_of_sound(dens, pressure, edens, scaled=False):
+def speed_of_sound(dens, pressure, edens, scaled=False, sat=False):
 
     '''
     Function to evaluate the speed of sound of
@@ -27,6 +28,9 @@ def speed_of_sound(dens, pressure, edens, scaled=False):
         Whether the data is scaled or not. If
         True, then the unscaling needs to be
         performed outside the code. Default is False.
+    sat : bool
+        Starting at saturation density (0.16 fm^-3)
+        or not. Default is False.
 
     Returns:
     --------
@@ -72,14 +76,20 @@ def speed_of_sound(dens, pressure, edens, scaled=False):
     en_mean = []
     en_lower = []
     en_upper = []
+    
+    # if saturation, calculate from there
+    if sat is True:
+        dens_arr = np.linspace(0.16, 16.0, 200)
+    else:
+        dens_arr = dens
 
-    for n in dens:
-        en_mean.append(n*(e_mean/dens[0] + \
-                        scint.quad(lambda x : pres_mean(x), dens[0], n)[0]))
-        en_lower.append(n*(e_low/dens[0] + \
-                        scint.quad(lambda x : pres_lower(x), dens[0], n)[0]))
-        en_upper.append(n*(e_high/dens[0] + \
-                        scint.quad(lambda x : pres_upper(x), dens[0], n)[0]))
+    for n in dens_arr:
+        en_mean.append(n*(e_mean/dens_arr[0] + \
+                        scint.quad(lambda x : pres_mean(x), dens_arr[0], n)[0]))
+        en_lower.append(n*(e_low/dens_arr[0] + \
+                        scint.quad(lambda x : pres_lower(x), dens_arr[0], n)[0]))
+        en_upper.append(n*(e_high/dens_arr[0] + \
+                        scint.quad(lambda x : pres_upper(x), dens_arr[0], n)[0]))
         
     # dict of energy densities
     edens_int = {
@@ -89,24 +99,24 @@ def speed_of_sound(dens, pressure, edens, scaled=False):
     }
 
     # calculate deriv of pressure
-    dpdn_mean = np.gradient(p_mean, dens)
-    dpdn_lower = np.gradient(p_low, dens)
-    dpdn_upper = np.gradient(p_high, dens)
+    dpdn_mean = ndt.Derivative(p_mean_interp, step=1e-6, method='central')
+    dpdn_lower = ndt.Derivative(p_lower_interp, step=1e-6, method='central')
+    dpdn_upper = ndt.Derivative(p_upper_interp, step=1e-6, method='central')
     
     # calculate deriv of energy density
-    dedn_mean = np.gradient(edens_int['mean'], dens)
-    dedn_lower = np.gradient(edens_int['lower'], dens)
-    dedn_upper = np.gradient(edens_int['upper'], dens)
+    dedn_mean = np.gradient(edens_int['mean'], dens_arr)
+    dedn_lower = np.gradient(edens_int['lower'], dens_arr)
+    dedn_upper = np.gradient(edens_int['upper'], dens_arr)
     
     # calculate the chemical potential
-    mu_mean = (en_mean + p_mean)/dens
-    mu_lower = (en_lower + p_low)/dens
-    mu_upper = (en_upper + p_high)/dens
+    mu_mean = (en_mean + p_mean_interp(dens_arr))/dens_arr
+    mu_lower = (en_lower + p_lower_interp(dens_arr))/dens_arr
+    mu_upper = (en_upper + p_upper_interp(dens_arr))/dens_arr
 
-    # calculate speed of sound (think more about uncertainties)
-    cs2_mean = dpdn_mean / dedn_mean
-    cs2_lower = dpdn_upper / dedn_lower
-    cs2_upper = dpdn_lower / dedn_upper
+    # calculate speed of sound at desired density array
+    cs2_mean = dpdn_mean(dens_arr) / dedn_mean
+    cs2_lower = dpdn_lower(dens_arr) / dedn_upper
+    cs2_upper = dpdn_upper(dens_arr) / dedn_lower
 
     # collect into dict and return
     cs2 = {
@@ -122,4 +132,4 @@ def speed_of_sound(dens, pressure, edens, scaled=False):
         'upper':mu_upper
     }
 
-    return cs2, edens_int, mu_dict
+    return dens_arr, cs2, edens_int, mu_dict
