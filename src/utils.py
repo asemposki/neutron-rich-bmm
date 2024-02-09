@@ -5,7 +5,7 @@ from scipy.interpolate import interp1d
 import numdifftools as ndt
 
 # define the speed of sound function 
-def speed_of_sound(dens, pressure, edens, scaled=False, sat=False):
+def speed_of_sound(dens, pressure, edens, scaled=False, sat=False, integrate='forward'):
 
     '''
     Function to evaluate the speed of sound of
@@ -31,6 +31,9 @@ def speed_of_sound(dens, pressure, edens, scaled=False, sat=False):
     sat : bool
         Starting at saturation density (0.16 fm^-3)
         or not. Default is False.
+    integrate : str
+        Decision to integrate forward or backward.
+        Default is 'forward'.
 
     Returns:
     --------
@@ -82,14 +85,33 @@ def speed_of_sound(dens, pressure, edens, scaled=False, sat=False):
         dens_arr = np.linspace(0.16, 16.0, 200)
     else:
         dens_arr = dens
-
-    for n in dens_arr:
-        en_mean.append(n*(e_mean/dens_arr[0] + \
-                        scint.quad(lambda x : pres_mean(x), dens_arr[0], n)[0]))
-        en_lower.append(n*(e_low/dens_arr[0] + \
-                        scint.quad(lambda x : pres_lower(x), dens_arr[0], n)[0]))
-        en_upper.append(n*(e_high/dens_arr[0] + \
-                        scint.quad(lambda x : pres_upper(x), dens_arr[0], n)[0]))
+        
+    # integrating forwards
+    if integrate == 'forward':
+        for n in dens_arr:
+            en_mean.append(n*(e_mean/dens_arr[0] + \
+                            scint.quad(lambda x : pres_mean(x), dens_arr[0], n)[0]))
+            en_lower.append(n*(e_low/dens_arr[0] + \
+                            scint.quad(lambda x : pres_lower(x), dens_arr[0], n)[0]))
+            en_upper.append(n*(e_high/dens_arr[0] + \
+                            scint.quad(lambda x : pres_upper(x), dens_arr[0], n)[0]))
+        
+    # try integrating backwards
+    elif integrate == 'backward':
+        #dens_rev = np.linspace(3.2, 16.0, 300)[::-1]  # for 100 -> 20
+        #dens_rev = np.linspace(6.4, 16.0, 300)[::-1]  # for 100 -> 40
+        dens_rev = np.linspace(11.2, 16.0, 300)[::-1] # for 100 -> 70
+        
+        for n in dens_rev:
+            en_mean.append(n*(e_mean/dens_rev[0] + \
+                            scint.quad(lambda x : pres_mean(x), n, dens_rev[0])[0]))
+            en_lower.append(n*(e_low/dens_rev[0] + \
+                            scint.quad(lambda x : pres_lower(x), n, dens_rev[0])[0]))
+            en_upper.append(n*(e_high/dens_rev[0] + \
+                            scint.quad(lambda x : pres_upper(x), n, dens_rev[0])[0]))
+        
+    else:
+        return KeyError('The integration can only be done forward or backward.')
         
     # dict of energy densities
     edens_int = {
@@ -112,17 +134,49 @@ def speed_of_sound(dens, pressure, edens, scaled=False, sat=False):
     mu_mean = (en_mean + p_mean_interp(dens_arr))/dens_arr
     mu_lower = (en_lower + p_lower_interp(dens_arr))/dens_arr
     mu_upper = (en_upper + p_upper_interp(dens_arr))/dens_arr
+    
+    # calculate the log of the chemical potential
+    log_mu_mean = np.log(mu_mean)
+    log_mu_lower = np.log(mu_lower)
+    log_mu_upper = np.log(mu_upper)
 
-    # calculate speed of sound at desired density array
+    # calculate speed of sound using energy density 
+    # derivative at desired density array
     cs2_mean = dpdn_mean(dens_arr) / dedn_mean
     cs2_lower = dpdn_lower(dens_arr) / dedn_upper
     cs2_upper = dpdn_upper(dens_arr) / dedn_lower
+    
+    # calculate speed of sound using chemical potential
+    # at desired density array
+    cs2_mu_mean = dpdn_mean(dens_arr) / mu_mean
+    cs2_mu_lower = dpdn_lower(dens_arr) / mu_upper
+    cs2_mu_upper = dpdn_upper(dens_arr) / mu_lower
+    
+    # calculate speed of sound using log(mu)
+    # at desired density array
+    cs2_log_mean = dens_arr * np.gradient(log_mu_mean, dens_arr)
+    cs2_log_lower = dens_arr * np.gradient(log_mu_lower, dens_arr)
+    cs2_log_upper = dens_arr * np.gradient(log_mu_upper, dens_arr)
 
     # collect into dict and return
     cs2 = {
         'mean' : cs2_mean,
         'lower' : cs2_lower,
         'upper' : cs2_upper
+    }
+    
+    # collect other method and return
+    cs2_mu = {
+        'mean' : cs2_mu_mean,
+        'lower' : cs2_mu_lower,
+        'upper' : cs2_mu_upper
+    }
+    
+    # collect log method and return
+    cs2_log = {
+        'mean': cs2_log_mean,
+        'lower': cs2_log_lower,
+        'upper': cs2_log_upper
     }
     
     # collect mu into dict and return
@@ -132,4 +186,4 @@ def speed_of_sound(dens, pressure, edens, scaled=False, sat=False):
         'upper':mu_upper
     }
 
-    return dens_arr, cs2, edens_int, mu_dict
+    return dens_arr, cs2, cs2_mu, cs2_log, edens_int, mu_dict
