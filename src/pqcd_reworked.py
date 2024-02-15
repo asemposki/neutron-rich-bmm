@@ -320,7 +320,6 @@ class PQCD:
 
         return n_mu, f_mu_2_new, self.f_mu_FG_new
     
-    
     # adding these in for now
     def yref(self, x):
         yref = ((self.Nf * self.Nc * x**4.0) / (12.0 * np.pi**2.0))  # FG pressure for any flavour, colour
@@ -328,28 +327,29 @@ class PQCD:
         return yref
     
     def expQ(self, x): 
-        #return self.alpha_s(x, loop=2)[:,0]
-        return (self.Nf * self.alpha_s(x, loop=2)/np.pi)[:,0]
-        #return self.alpha_s(x, loop=2)[:,0]
+        #return (self.Nf * self.alpha_s(x, loop=2)/np.pi)[:,0]
+        return self.alpha_s(x, loop=2)[:,0]  # alpha_s only
     
     def c_0(self, x):
         return np.ones(len(x))
     
     def c_1(self, x):
-        return (self.a11*np.ones(len(x))/self.Nf)
-        #return (self.a11/np.pi)*np.ones(len(x))
+        #return (self.a11*np.ones(len(x))/self.Nf)
+        return (self.a11/np.pi)*np.ones(len(x))  # alpha_s only
     
     def c_2(self, x):
         lambda_bar = 2.0 * self.X * x
         one = self.a21 * np.log(self.Nf * self.alpha_s(x, loop=2)/np.pi)
         two = self.a22 * np.log(lambda_bar/(2.0*x))
         three = self.a23
-        return (one + two + three)/self.Nf
-        #return (one + two + three) * self.Nf/(np.pi**2)
+        #return (one + two + three)/self.Nf
+        return (one + two + three) * self.Nf/(np.pi**2)  # alpha_s only
     
+
+    ### Here lies the issue ...
     def mu_1(self, mu_FG): 
         mU_FG = mu_FG[:, None]
-        numerator = self.c_1(mu_FG) * self.expQ(mU_FG) * (self.Nf * mu_FG**3.0/np.pi**2.0)
+        numerator = self.c_1(mu_FG) * self.expQ(mU_FG) * (self.Nf * mu_FG**3.0/(np.pi**2.0))
         #numerator = self.c_1(mu_FG) * self.alpha_s(mu_FG, loop=2) * self.n_FG_mu(mu_FG) #checked 
         denominator = self.c_0(mu_FG) * (self.Nf * 3.0 * mu_FG**2.0 / (np.pi**2.0)) #checked
         return -numerator/denominator
@@ -357,18 +357,18 @@ class PQCD:
     def mu_2(self, mu_FG): 
         
         mU_FG = mu_FG[:, None]
-        derivalpha = - self.beta0 * self.alpha_s(mu_FG, loop=2)**2.0 / (2.0 * mu_FG * np.pi)
-        derivQ = derivalpha * self.Nf/np.pi
+        self.derivalpha = - self.beta0 * self.alpha_s(mu_FG, loop=2)**2.0 / (2.0 * mu_FG * np.pi)
+        self.derivQ = self.derivalpha * (self.expQ(mU_FG)/self.alpha_s(mu_FG, loop=2))
         secderivP0 = self.Nf * 3.0 * mu_FG**2.0 / (np.pi**2.0)
         
-        first = 0.5 * self.c_0(mu_FG) * self.mu_1(mu_FG)**2.0 * (self.Nf * 6.0 * mu_FG / np.pi**2.0) #checked
+        first = 0.5 * self.c_0(mu_FG) * self.mu_1(mu_FG)**2.0 * (self.Nf * 6.0 * mu_FG / (np.pi**2.0)) #checked
         #third = self.c_1(mu_FG) * derivalpha * self.pressure_FG(mu_FG) #checked
-        third = self.c_1(mu_FG) * derivQ * self.pressure_FG(mu_FG)
+        third = self.c_1(mu_FG) * self.derivQ * self.pressure_FG(mu_FG)
         
       #  second = self.mu_1(mu_FG) * self.c_1(mu_FG) * self.alpha_s(mu_FG, loop=2) * secderivP0 #checked
         second = self.mu_1(mu_FG) * self.c_1(mu_FG) * self.expQ(mU_FG) * secderivP0
       #  fourth = self.c_2(mu_FG) * self.alpha_s(mu_FG, loop=2)**2.0 * (self.Nf * mu_FG**3.0 / (np.pi**2.0)) #checked
-        fourth = self.c_2(mu_FG) * self.expQ(mU_FG)**2.0 * (self.Nf * mu_FG**3.0 / (np.pi**2.0))
+        fourth = self.c_2(mu_FG) * self.expQ(mU_FG)**2.0 * (self.n_FG_mu(mu_FG))
         
         mu2 = -(first + second + third + fourth)/(self.c_0(mu_FG) * secderivP0)
         
@@ -381,7 +381,6 @@ class PQCD:
         # mu_FG assignment
         mU_FG = mu_FG[:,None]
         
-        # calculate order by order pressure
         pressure_0 = self.c_0(mu_FG) * self.yref(mU_FG)
         
         pressure_1 = self.c_1(mu_FG)*self.expQ(mU_FG)*self.yref(mU_FG) + \
@@ -400,8 +399,8 @@ class PQCD:
         # stash in dict
         pressure_n = {
             "LO": pressure_LO,
-            "NLO":pressure_NLO,
-            "N2LO":pressure_N2LO
+            "NLO": pressure_NLO,
+            "N2LO": pressure_N2LO
         }
         
         return pressure_n

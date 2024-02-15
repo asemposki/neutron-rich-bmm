@@ -82,7 +82,7 @@ def speed_of_sound(dens, pressure, edens, scaled=False, sat=False, integrate='fo
     
     # if saturation, calculate from there
     if sat is True:
-        dens_arr = np.linspace(0.16, 16.0, 200)
+        dens_arr = np.linspace(0.16, 16.0, 600)
     else:
         dens_arr = dens
         
@@ -98,17 +98,14 @@ def speed_of_sound(dens, pressure, edens, scaled=False, sat=False, integrate='fo
         
     # try integrating backwards
     elif integrate == 'backward':
-        #dens_rev = np.linspace(3.2, 16.0, 300)[::-1]  # for 100 -> 20
-        #dens_rev = np.linspace(6.4, 16.0, 300)[::-1]  # for 100 -> 40
-        dens_rev = np.linspace(11.2, 16.0, 300)[::-1] # for 100 -> 70
         
-        for n in dens_rev:
-            en_mean.append(n*(e_mean/dens_rev[0] + \
-                            scint.quad(lambda x : pres_mean(x), n, dens_rev[0])[0]))
-            en_lower.append(n*(e_low/dens_rev[0] + \
-                            scint.quad(lambda x : pres_lower(x), n, dens_rev[0])[0]))
-            en_upper.append(n*(e_high/dens_rev[0] + \
-                            scint.quad(lambda x : pres_upper(x), n, dens_rev[0])[0]))
+        for n in dens_arr:
+            en_mean.append(n*(e_mean/dens_arr[-1] - \
+                            scint.quad(lambda x : pres_mean(x), n, dens_arr[-1])[0]))
+            en_lower.append(n*(e_low/dens_arr[-1] - \
+                            scint.quad(lambda x : pres_lower(x), n, dens_arr[-1])[0]))
+            en_upper.append(n*(e_high/dens_arr[-1] - \
+                            scint.quad(lambda x : pres_upper(x), n, dens_arr[-1])[0]))
         
     else:
         return KeyError('The integration can only be done forward or backward.')
