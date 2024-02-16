@@ -80,8 +80,7 @@ class Truncation:
         mu_mask = mu[low_bound:]
         
         # set the mask s.t. it picks the same training point number each time
-       # mask_num = len(mu_mask) // 2  # original is 2 here
-        mask_num = len(mu_mask) // 2
+        mask_num = len(mu_mask) // 2  # original is 2 here for Nf*alpha_s/pi
         mask_true = np.array([(i) % mask_num == 0 for i in range(len(mu_mask))])
         
         # concatenate with a mask over the other elements of mu before low_bound
@@ -279,16 +278,16 @@ class Truncation:
         text_bbox = dict(boxstyle='round', fc=(1, 1, 1, 0.6), ec='k', lw=0.8)
         
         # call the masking function for diagnostics
-        x_train_mask, x_valid_mask = self.regular_train_test_split(self.x_FG, dx_train, dx_test, offset_train=1, offset_test=1)
+        x_train_mask, x_valid_mask = self.regular_train_test_split(self.x_FG, dx_train, dx_test, offset_train=0, offset_test=0)
         
-        # print the values for checking
+        # print the values for checking (use only ones after 40 n0 again)
         print('Number of points in training set:', np.shape(self.X_FG[self.mask])[0])
         print('Number of points in validation set:', np.shape(self.X_FG[x_valid_mask])[0])
 
         print('\nTraining set: \n', self.X_FG[self.mask])
         print('\nValidation set: \n', self.X_FG[x_valid_mask])
 
-        # overwrite the training mask with the original mask (will yield 6 points)
+        # overwrite the training mask with the original mask for keeping range correct
         x_train_mask = self.mask 
 
         # check if the two arrays have equal elements
@@ -297,11 +296,13 @@ class Truncation:
                 if i == j:
                     print('Found an equal value!')
 
-        # call same kernel for diagnostics (should already be set...remove if true...)
-        self.gp_interp.fit(self.X_FG[x_train_mask], self.coeffs[x_train_mask])
-        pred, std = self.gp_interp.predict(self.X_FG, return_std=True)
-        underlying_std = np.sqrt(self.gp_interp.cov_factor_)
-        print(np.sqrt(self.gp_interp.cov_factor_))
+        # call same kernel for diagnostics, do not reset the kernel!!!
+        gp_diagnostic = gm.ConjugateGaussianProcess(kernel=self.kernel, \
+                                                    center=self.center, disp=0, df=3.0, scale=self.sd)
+        gp_diagnostic.fit(self.X_FG[x_train_mask], self.coeffs[x_train_mask])
+        pred, std = gp_diagnostic.predict(self.X_FG, return_std=True)
+        underlying_std = np.sqrt(gp_diagnostic.cov_factor_)
+        print(underlying_std)
 
         # plot the result of the coefficient interpolation
         fig, ax = plt.subplots(figsize=(3.2, 3.2))
@@ -323,14 +324,15 @@ class Truncation:
         fig.tight_layout();
         
         print(r'Std. dev. expected value:', underlying_std)
-        print('Calculated value :', np.sqrt(self.gp_interp.df_ * self.gp_interp.scale_**2 / (self.gp_interp.df_ + 2)))
+        print('Calculated value :', gp_diagnostic.df_ * gp_diagnostic.scale_**2 / (gp_diagnostic.df_ + 2))
 
         # Print out the kernel of the fitted GP
-        self.gp_interp.kernel_
+        print('Trained kernel: ', self.gp_interp.kernel_)
+        print('Diagnostic kernel: ', gp_diagnostic.kernel_)
         
         # MD diagnostic plotting
-        mean_underlying = self.gp_interp.mean(self.X_FG[x_valid_mask])
-        cov_underlying = self.gp_interp.cov(self.X_FG[x_valid_mask])
+        mean_underlying = gp_diagnostic.mean(self.X_FG[x_valid_mask])
+        cov_underlying = gp_diagnostic.cov(self.X_FG[x_valid_mask])
         print(cov_underlying)
         print('Condition number:', np.linalg.cond(cov_underlying))
 
@@ -347,14 +349,12 @@ class Truncation:
         ax = gdgn.md_squared(type='box', trim=False, title=None, xlabel=MD_label)
         offset_xlabel(ax)
         ax.set_ylim(0, 20)
-        fig.tight_layout();
         
         # Pivoted Cholesky as well
         with plt.rc_context({"text.usetex": True}):
             fig, ax = plt.subplots(figsize=(3.2, 3.2))
             gdgn.pivoted_cholesky_errors(ax=ax, title=None)
             ax.text(0.04, 0.967, PC_label, bbox=text_bbox, transform=ax.transAxes, va='top', ha='left')
-            fig.tight_layout();
             plt.show()
         
         return None

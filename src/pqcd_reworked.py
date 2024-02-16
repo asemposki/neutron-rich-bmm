@@ -327,23 +327,23 @@ class PQCD:
         return yref
     
     def expQ(self, x): 
-        #return (self.Nf * self.alpha_s(x, loop=2)/np.pi)[:,0]
-        return self.alpha_s(x, loop=2)[:,0]  # alpha_s only
+        return (self.Nf * self.alpha_s(x, loop=2)/np.pi)[:,0]
+        #return self.alpha_s(x, loop=2)[:,0]  # alpha_s only
     
     def c_0(self, x):
         return np.ones(len(x))
     
     def c_1(self, x):
-        #return (self.a11*np.ones(len(x))/self.Nf)
-        return (self.a11/np.pi)*np.ones(len(x))  # alpha_s only
+        return (self.a11*np.ones(len(x))/self.Nf)
+        #return (self.a11/np.pi)*np.ones(len(x))  # alpha_s only
     
     def c_2(self, x):
         lambda_bar = 2.0 * self.X * x
         one = self.a21 * np.log(self.Nf * self.alpha_s(x, loop=2)/np.pi)
         two = self.a22 * np.log(lambda_bar/(2.0*x))
         three = self.a23
-        #return (one + two + three)/self.Nf
-        return (one + two + three) * self.Nf/(np.pi**2)  # alpha_s only
+        return (one + two + three)/self.Nf
+        #return (one + two + three) * self.Nf/(np.pi**2)  # alpha_s only
     
 
     ### Here lies the issue ...
