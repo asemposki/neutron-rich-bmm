@@ -13,6 +13,7 @@ old_notebooks/
 .ipynb_checkpoints/
 .DS_Store
 __pycache__/
+model-selection_mini-project-IIa.ipynb
 
 # IDE specifics
 .idea/

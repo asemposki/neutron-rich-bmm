@@ -17,7 +17,12 @@ from sklearn.gaussian_process.kernels import RBF, WhiteKernel
 # class declaration
 class Truncation:
 
-    def __init__(self, x, x_FG, norders, yref, expQ, coeffs):
+    def __init__(self, x, x_FG, norders, orders, yref, expQ, coeffs, mask=None):
+        
+        # immediately create this 
+        self.orders_mask = None
+        self.orders = orders
+        self.n_orders = norders
 
         # define class variables for pressure to all orders
         self.x = x
@@ -36,19 +41,34 @@ class Truncation:
         
         # separate the coeffs
         self.coeffs_list = []
-
-        for i in range(norders):
+        
+        # if masking, create separate instance of coeffs
+        if mask is not None:
+            self.coeffs_list_trunc = []
+            self.orders_mask = mask
+            coeffs_trunc = coeffs[:,self.orders_mask]
+            
+            for i in range(len(coeffs_trunc.T)):
+                self.coeffs_list_trunc.append(coeffs_trunc[:,i])
+                
+        for i in range(len(coeffs.T)):
             self.coeffs_list.append(coeffs[:,i])
 
-        # construct arrays of each quantity
+        # construct total arrays of each quantity
         self.coeffs_all = np.array(self.coeffs_list).T
         self.data_all = gm.partials(self.coeffs_all, ratio=self.expQ, ref=self.yref, orders=[range(norders)])
         self.diffs_all = np.array([self.data_all[:, 0], *np.diff(self.data_all, axis=1).T]).T
+        
+        # save different coeff array for the GP to fit
+        if mask is not None:
+            self.coeffs_all_trunc = np.array(self.coeffs_list_trunc).T
 
-        # Get the "all-orders" curve
+        # get the "all-orders" curve
         self.data_true = self.data_all[:, -1]
 
         # specify range
+        if mask is not None:
+            self.coeffs_trunc = self.coeffs_all_trunc   # I think this is sufficient for now
         self.coeffs = self.coeffs_all[:, :norders]
         self.data = self.data_all[:, :norders]
         self.diffs = self.diffs_all[:, :norders]
@@ -75,17 +95,19 @@ class Truncation:
         '''
         
         # mask for values above 40*n0 only (good)
-        low_bound = next(i for i, val in enumerate(mu)
-                                  if val > 0.88616447)
-        mu_mask = mu[low_bound:]
+#         low_bound = next(i for i, val in enumerate(mu)
+#                                   if val > 0.88616447)
+#         mu_mask = mu[low_bound:]
+        mu_mask = mu    # no mask applied
         
         # set the mask s.t. it picks the same training point number each time
         mask_num = len(mu_mask) // 2  # original is 2 here for Nf*alpha_s/pi
-        mask_true = np.array([(i) % mask_num == 0 for i in range(len(mu_mask))])
+        mask_true = np.array([(i-3) % mask_num == 0 for i in range(len(mu_mask))])
         
         # concatenate with a mask over the other elements of mu before low_bound
-        mask_false = np.full((1,len(mu[:low_bound])), fill_value=False)
-        self.mask = np.concatenate((mask_false[0], mask_true))
+  #      mask_false = np.full((1,len(mu[:low_bound])), fill_value=False)
+  #      self.mask = np.concatenate((mask_false[0], mask_true))
+        self.mask = mask_true
        
         return self.mask 
     
@@ -159,7 +181,10 @@ class Truncation:
             kernel=self.kernel, center=center, disp=0, df=3.0, scale=sd, nugget=0) 
         
         # fit and predict using the interpolated GP
-        self.gp_interp.fit(self.X[self.mask], self.coeffs[self.mask])
+        if self.orders_mask is not None:
+            self.gp_interp.fit(self.X[self.mask], self.coeffs_trunc[self.mask])
+        else:
+            self.gp_interp.fit(self.X[self.mask], self.coeffs[self.mask])
         pred, std = self.gp_interp.predict(self.X, return_std=True)
         underlying_std = np.sqrt(self.gp_interp.cov_factor_)
         
@@ -184,9 +209,6 @@ class Truncation:
         -----------
         x : numpy.ndarray
             The linspace of input variable needed.
-        
-        n_orders : int
-            The highest order to which the pressure EOS is calculated.
             
         kernel : obj
             The kernel needed for the interpolation and truncation GP.
@@ -205,11 +227,6 @@ class Truncation:
 
         '''
 
-        # orders
-        n_orders = self.norders
-        orders = np.arange(0, n_orders)
-        self.orders = orders
-
         # construct the mask
         if self.x_FG is None:
             self.x_FG = self.x
@@ -218,18 +235,18 @@ class Truncation:
 
         # get correct data shape
         if data is None:
-            data = self.data_all[:, :n_orders]
+            data = self.data_all[:, :self.n_orders]
         else:
-            data = data[:, :n_orders]
+            data = data[:, :self.n_orders]
 
         # set up the truncation GP (from interpolation one so using the same kernel as for all orders in P)
         trunc_gp = gm.TruncationGP(kernel=self.kernel, ref=yref, \
                             ratio=expQ, disp=0, df=3, scale=1, optimizer=None)
-        trunc_gp.fit(self.X_FG[self.mask], data[self.mask], orders=orders)  
+        trunc_gp.fit(self.X_FG[self.mask], data[self.mask], orders=self.orders)  
 
-        std_trunc = np.zeros([len(self.X_FG), n_orders])
-        cov_trunc = np.zeros([len(self.X_FG), len(self.X_FG), n_orders])
-        for i, n in enumerate(orders):
+        std_trunc = np.zeros([len(self.X_FG), self.n_orders])
+        cov_trunc = np.zeros([len(self.X_FG), len(self.X_FG), self.n_orders])
+        for i, n in enumerate(self.orders):
             # Only get the uncertainty due to truncation (kind='trunc')
             _, std_trunc[:,n] = trunc_gp.predict(self.X_FG, order=n, return_std=True, kind='trunc')
             _, cov_trunc[:,:,n] = trunc_gp.predict(self.X_FG, order=n, return_std=False, return_cov=True, kind='trunc')

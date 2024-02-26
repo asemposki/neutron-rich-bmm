@@ -51,6 +51,10 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             ensure_2d=ensure_2d,
             dtype=dtype,
         )
+        
+        # added because it is not passing this for some reason from sklearn
+        n_targets = None
+        self.n_targets = n_targets
 
         n_targets_seen = y.shape[1] if y.ndim > 1 else 1
         if self.n_targets is not None and n_targets_seen != self.n_targets:
