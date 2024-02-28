@@ -5,7 +5,7 @@ from scipy.interpolate import interp1d
 import numdifftools as ndt
 
 # define the speed of sound function 
-def speed_of_sound(dens, pressure, edens, scaled=False, sat=False, integrate='forward'):
+def speed_of_sound(dens, pressure, edens, scaled=False, sat=False, integrate='forward', sampled=False):
 
     '''
     Function to evaluate the speed of sound of
@@ -34,7 +34,12 @@ def speed_of_sound(dens, pressure, edens, scaled=False, sat=False, integrate='fo
     integrate : str
         Decision to integrate forward or backward.
         Default is 'forward'.
-
+    sampled: bool
+        If using samples from the speed of sound, run
+        the std and mean using nanmean and nanstd from
+        numpy instead of computing envelopes.
+        Default is 'False'. 
+    
     Returns:
     --------
     cs2 : dict
@@ -48,7 +53,48 @@ def speed_of_sound(dens, pressure, edens, scaled=False, sat=False, integrate='fo
         raise ValueError('Cannot unscale data here, \
                         please do this outside of \
                         this function.')
+        
+    if sat is True:
+        dens_arr = np.linspace(0.16, 16.0, 300)
+    else:
+        dens_arr = dens
+        
+    # if using samples, then run this part only
+    if sampled is True:
+        pres = np.asarray(pressure['samples'])   # (nB, n_samples) shape
+        edens_0 = edens['mean']
+        
+        # huge list for all sampled curves
+        edens_full = []
+        p_dens_arr = []
+        
+        # collect the function together
+        dn = dens[1] - dens[0]    # equally spaced
+        print(dn)
+        dens_part = dn / dens**2.0   # array of size n
+        
+        # interpolation and integration for each sample 
+        for i in range(len(pres.T)):
+            
+            # empty list for storing (re-initialize to dump old data)
+            en_samples = np.zeros(len(pres))
+            
+            # outer term (not changing with n)
+            outer = (edens_0/dens[0])
+                       
+#             # integration for each sampled curve
+#             for n in dens_arr:
+#                 en_samples.append(n*(edens_0/dens_arr[0] + \
+#                             scint.quad(lambda x : (p_interp(x)/x**2.0), dens_arr[0], n)[0]))
+            for j in range(len(dens)):
+                        
+                # try dot product as a simple approximation
+                en_samples[j] = dens[j] * (outer + np.dot(pres[:j, i], dens_part[:j]))
 
+            edens_full.append(en_samples)   # shape (nB, n_samples)
+   
+        return edens_full #dens_arr, cs2_log, edens_full, mu
+    
     # extract the necessary information
     p_mean = pressure['mean']
     p_low = pressure['mean'] - pressure['std_dev']
@@ -79,12 +125,6 @@ def speed_of_sound(dens, pressure, edens, scaled=False, sat=False, integrate='fo
     en_mean = []
     en_lower = []
     en_upper = []
-    
-    # if saturation, calculate from there
-    if sat is True:
-        dens_arr = np.linspace(0.16, 16.0, 600)
-    else:
-        dens_arr = dens
         
     # integrating forwards
     if integrate == 'forward':
@@ -154,6 +194,12 @@ def speed_of_sound(dens, pressure, edens, scaled=False, sat=False, integrate='fo
     cs2_log_mean = dens_arr * np.gradient(log_mu_mean, dens_arr)
     cs2_log_lower = dens_arr * np.gradient(log_mu_lower, dens_arr)
     cs2_log_upper = dens_arr * np.gradient(log_mu_upper, dens_arr)
+    
+    # calculate mean and std of speed of sound (store here for use today)
+#     speed_of_sound_mean = np.nanmean(speed_of_sound_samples, axis=0)
+#     speed_of_sound_std = np.nanstd(speed_of_sound_samples, axis=0)
+#     speed_of_sounds.append(speed_of_sound_mean)
+#     speed_of_sound_stds.append(speed_of_sound_std)
 
     # collect into dict and return
     cs2 = {

@@ -95,19 +95,19 @@ class Truncation:
         '''
         
         # mask for values above 40*n0 only (good)
-#         low_bound = next(i for i, val in enumerate(mu)
-#                                   if val > 0.88616447)
-#         mu_mask = mu[low_bound:]
-        mu_mask = mu    # no mask applied
+        low_bound = next(i for i, val in enumerate(mu)
+                                  if val > 0.88616447)
+        mu_mask = mu[low_bound:]
+#        mu_mask = mu    # no mask applied
         
         # set the mask s.t. it picks the same training point number each time
-        mask_num = len(mu_mask) // 2  # original is 2 here for Nf*alpha_s/pi
-        mask_true = np.array([(i-3) % mask_num == 0 for i in range(len(mu_mask))])
+        mask_num = len(mu_mask) // 1.5  # original is 2 here for Nf*alpha_s/pi
+        mask_true = np.array([(i) % mask_num == 0 for i in range(len(mu_mask))])  # i-3 for <40n0
         
         # concatenate with a mask over the other elements of mu before low_bound
-  #      mask_false = np.full((1,len(mu[:low_bound])), fill_value=False)
-  #      self.mask = np.concatenate((mask_false[0], mask_true))
-        self.mask = mask_true
+        mask_false = np.full((1,len(mu[:low_bound])), fill_value=False)
+        self.mask = np.concatenate((mask_false[0], mask_true))
+#        self.mask = mask_true     #no mask applied
        
         return self.mask 
     
@@ -242,6 +242,7 @@ class Truncation:
         # set up the truncation GP (from interpolation one so using the same kernel as for all orders in P)
         trunc_gp = gm.TruncationGP(kernel=self.kernel, ref=yref, \
                             ratio=expQ, disp=0, df=3, scale=1, optimizer=None)
+        
         trunc_gp.fit(self.X_FG[self.mask], data[self.mask], orders=self.orders)  
 
         std_trunc = np.zeros([len(self.X_FG), self.n_orders])
