@@ -8,6 +8,8 @@
 gptools/
 gsum/
 nuclear-matter-convergence/
+multiple_densities/
+sampled_curves/
 old_notebooks/
 *.csv
 .ipynb_checkpoints/
