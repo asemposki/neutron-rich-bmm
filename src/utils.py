@@ -5,7 +5,7 @@ from scipy.interpolate import interp1d
 import numdifftools as ndt
 
 # define the speed of sound function 
-def speed_of_sound(dens, pressure, edens, scaled=False, sat=False, integrate='forward', sampled=False):
+def speed_of_sound(dens, pressure, edens, sat=False, integrate='forward', sampled=False):
 
     '''
     Function to evaluate the speed of sound of
@@ -24,10 +24,6 @@ def speed_of_sound(dens, pressure, edens, scaled=False, sat=False, integrate='fo
         The dictionary of energy density 
         means and standard deviations for a 
         specific starting point in density.
-    scaled : bool
-        Whether the data is scaled or not. If
-        True, then the unscaling needs to be
-        performed outside the code. Default is False.
     sat : bool
         Starting at saturation density (0.16 fm^-3)
         or not. Default is False.
@@ -48,18 +44,13 @@ def speed_of_sound(dens, pressure, edens, scaled=False, sat=False, integrate='fo
         bounds of it at one sigma.
     '''
 
-    # check for scaling (can change later if needed)
-    if scaled is True:
-        raise ValueError('Cannot unscale data here, \
-                        please do this outside of \
-                        this function.')
-        
+    # check for saturation point integration
     if sat is True:
-        dens_arr = np.linspace(0.16, 16.0, 300)
+        dens_arr = np.linspace(0.16, 16.0, 600)
     else:
         dens_arr = dens
         
-    # if using samples, then run this part only
+    # using samples
     if sampled is True:
         pres = np.asarray(pressure['samples'])   # (nB, n_samples) shape
         edens_0 = edens['mean']
@@ -70,7 +61,6 @@ def speed_of_sound(dens, pressure, edens, scaled=False, sat=False, integrate='fo
         
         # collect the function together
         dn = dens[1] - dens[0]    # equally spaced
-        print(dn)
         dens_part = dn / dens**2.0   # array of size n
         
         # interpolation and integration for each sample 
@@ -81,19 +71,36 @@ def speed_of_sound(dens, pressure, edens, scaled=False, sat=False, integrate='fo
             
             # outer term (not changing with n)
             outer = (edens_0/dens[0])
-                       
-#             # integration for each sampled curve
-#             for n in dens_arr:
-#                 en_samples.append(n*(edens_0/dens_arr[0] + \
-#                             scint.quad(lambda x : (p_interp(x)/x**2.0), dens_arr[0], n)[0]))
+
             for j in range(len(dens)):
                         
                 # try dot product as a simple approximation
                 en_samples[j] = dens[j] * (outer + np.dot(pres[:j, i], dens_part[:j]))
+                
+                # Simpson's Rule integration
+                #en_samples[j] = dens[j] * (outer + scint.simps((pres[:j+1, i]/dens[:j+1]**2.0), dens[:j+1]))
 
-            edens_full.append(en_samples)   # shape (nB, n_samples)
-   
-        return edens_full #dens_arr, cs2_log, edens_full, mu
+            edens_full.append(en_samples)   # shape (n_samples, nB)
+                        
+        # now calculate chemical potential and derivative
+        mu_samples = np.asarray([(np.asarray(edens_full)[i,:] + pres[:,i]) for \
+                                 i in range(len(edens_full))])
+        log_mu_samples = np.log(mu_samples) # shape (n_samples, nB)
+                 
+        # speed of sound and return
+        cs2_log_samples = dens * np.gradient(log_mu_samples, dn, axis=1, edge_order=2) - np.ones(len(dens))
+  
+        # get mean, std_dev estimations out, store and return
+        cs2_log_mean = np.nanmean(cs2_log_samples, axis=0)
+        cs2_log_std = np.nanstd(cs2_log_samples, axis=0)
+        
+        cs2_log = {
+            'mean': cs2_log_mean,
+            'std': cs2_log_std,
+            'samples': cs2_log_samples
+        }
+        
+        return cs2_log, edens_full
     
     # extract the necessary information
     p_mean = pressure['mean']
@@ -122,33 +129,39 @@ def speed_of_sound(dens, pressure, edens, scaled=False, sat=False, integrate='fo
         return p_upper_interp(n) / n**2.0
 
     # perform integration
-    en_mean = []
+    en_mean = np.zeros_like(p_mean)
     en_lower = []
     en_upper = []
         
     # integrating forwards
     if integrate == 'forward':
-        for n in dens_arr:
-            en_mean.append(n*(e_mean/dens_arr[0] + \
-                            scint.quad(lambda x : pres_mean(x), dens_arr[0], n)[0]))
-            en_lower.append(n*(e_low/dens_arr[0] + \
-                            scint.quad(lambda x : pres_lower(x), dens_arr[0], n)[0]))
-            en_upper.append(n*(e_high/dens_arr[0] + \
-                            scint.quad(lambda x : pres_upper(x), dens_arr[0], n)[0]))
         
+        for j in range(len(dens_arr)):
+        
+        # Simpson's Rule integration
+            en_mean[j] = dens_arr[j] * (e_mean/dens_arr[0] + \
+                                        scint.simps((np.asarray(p_mean)[:j+1]/dens_arr[:j+1]**2.0), dens_arr[:j+1]))
+        print('We did Simpsons integration!')
+
+        for n in dens_arr:
+#             en_mean.append(n*(e_mean/dens_arr[0] + \
+#                             scint.quad(lambda x : pres_mean(x), dens_arr[0], n, epsabs=1e-10, epsrel=1e-10)[0]))
+            
+            en_lower.append(n*(e_low/dens_arr[0] + \
+                            scint.quad(lambda x : pres_lower(x), dens_arr[0], n, epsabs=1e-10, epsrel=1e-10)[0]))
+            en_upper.append(n*(e_high/dens_arr[0] + \
+                            scint.quad(lambda x : pres_upper(x), dens_arr[0], n, epsabs=1e-10, epsrel=1e-10)[0]))
+                               
     # try integrating backwards
     elif integrate == 'backward':
         
         for n in dens_arr:
             en_mean.append(n*(e_mean/dens_arr[-1] - \
-                            scint.quad(lambda x : pres_mean(x), n, dens_arr[-1])[0]))
+                            scint.quad(lambda x : pres_mean(x), n, dens_arr[-1], epsabs=1e-10, epsrel=1e-10)[0]))
             en_lower.append(n*(e_low/dens_arr[-1] - \
-                            scint.quad(lambda x : pres_lower(x), n, dens_arr[-1])[0]))
+                            scint.quad(lambda x : pres_lower(x), n, dens_arr[-1], epsabs=1e-10, epsrel=1e-10)[0]))
             en_upper.append(n*(e_high/dens_arr[-1] - \
-                            scint.quad(lambda x : pres_upper(x), n, dens_arr[-1])[0]))
-        
-    else:
-        return KeyError('The integration can only be done forward or backward.')
+                            scint.quad(lambda x : pres_upper(x), n, dens_arr[-1], epsabs=1e-10, epsrel=1e-10)[0]))
         
     # dict of energy densities
     edens_int = {
@@ -163,9 +176,9 @@ def speed_of_sound(dens, pressure, edens, scaled=False, sat=False, integrate='fo
     dpdn_upper = ndt.Derivative(p_upper_interp, step=1e-6, method='central')
     
     # calculate deriv of energy density
-    dedn_mean = np.gradient(edens_int['mean'], dens_arr)
-    dedn_lower = np.gradient(edens_int['lower'], dens_arr)
-    dedn_upper = np.gradient(edens_int['upper'], dens_arr)
+    dedn_mean = np.gradient(edens_int['mean'], dens_arr, edge_order=2)
+    dedn_lower = np.gradient(edens_int['lower'], dens_arr, edge_order=2)
+    dedn_upper = np.gradient(edens_int['upper'], dens_arr, edge_order=2)
     
     # calculate the chemical potential
     mu_mean = (en_mean + p_mean_interp(dens_arr))/dens_arr
@@ -191,16 +204,10 @@ def speed_of_sound(dens, pressure, edens, scaled=False, sat=False, integrate='fo
     
     # calculate speed of sound using log(mu)
     # at desired density array
-    cs2_log_mean = dens_arr * np.gradient(log_mu_mean, dens_arr)
-    cs2_log_lower = dens_arr * np.gradient(log_mu_lower, dens_arr)
-    cs2_log_upper = dens_arr * np.gradient(log_mu_upper, dens_arr)
+    cs2_log_mean = dens_arr * np.gradient(log_mu_mean, dens_arr, edge_order=2)
+    cs2_log_lower = dens_arr * np.gradient(log_mu_lower, dens_arr, edge_order=2)
+    cs2_log_upper = dens_arr * np.gradient(log_mu_upper, dens_arr, edge_order=2)
     
-    # calculate mean and std of speed of sound (store here for use today)
-#     speed_of_sound_mean = np.nanmean(speed_of_sound_samples, axis=0)
-#     speed_of_sound_std = np.nanstd(speed_of_sound_samples, axis=0)
-#     speed_of_sounds.append(speed_of_sound_mean)
-#     speed_of_sound_stds.append(speed_of_sound_std)
-
     # collect into dict and return
     cs2 = {
         'mean' : cs2_mean,

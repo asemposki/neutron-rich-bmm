@@ -241,7 +241,7 @@ class Truncation:
 
         # set up the truncation GP (from interpolation one so using the same kernel as for all orders in P)
         trunc_gp = gm.TruncationGP(kernel=self.kernel, ref=yref, \
-                            ratio=expQ, disp=0, df=3, scale=1, optimizer=None)
+                            ratio=expQ, disp=1.0, df=0, scale=self.sd, optimizer=None)  # 0.0
         
         trunc_gp.fit(self.X_FG[self.mask], data[self.mask], orders=self.orders)  
 
@@ -296,7 +296,8 @@ class Truncation:
         text_bbox = dict(boxstyle='round', fc=(1, 1, 1, 0.6), ec='k', lw=0.8)
         
         # call the masking function for diagnostics
-        x_train_mask, x_valid_mask = self.regular_train_test_split(self.x_FG, dx_train, dx_test, offset_train=0, offset_test=0)
+        x_train_mask, x_valid_mask = self.regular_train_test_split(self.x_FG, dx_train, dx_test, offset_train=0, \
+                                                                   offset_test=0, xmin=0.88616447)
         
         # print the values for checking (use only ones after 40 n0 again)
         print('Number of points in training set:', np.shape(self.X_FG[self.mask])[0])
@@ -305,7 +306,7 @@ class Truncation:
         print('\nTraining set: \n', self.X_FG[self.mask])
         print('\nValidation set: \n', self.X_FG[x_valid_mask])
 
-        # overwrite the training mask with the original mask for keeping range correct
+        # overwrite training mask with the original mask for keeping range correct
         x_train_mask = self.mask 
 
         # check if the two arrays have equal elements
@@ -316,7 +317,7 @@ class Truncation:
 
         # call same kernel for diagnostics, do not reset the kernel!!!
         gp_diagnostic = gm.ConjugateGaussianProcess(kernel=self.kernel, \
-                                                    center=self.center, disp=0, df=3.0, scale=self.sd)
+                                                    center=self.center, disp=0, df=3.0, scale=self.sd) 
         gp_diagnostic.fit(self.X_FG[x_train_mask], self.coeffs[x_train_mask])
         pred, std = gp_diagnostic.predict(self.X_FG, return_std=True)
         underlying_std = np.sqrt(gp_diagnostic.cov_factor_)
@@ -347,6 +348,7 @@ class Truncation:
         # Print out the kernel of the fitted GP
         print('Trained kernel: ', self.gp_interp.kernel_)
         print('Diagnostic kernel: ', gp_diagnostic.kernel_)
+        print('Scale now: ', gp_diagnostic.scale_)
         
         # MD diagnostic plotting
         mean_underlying = gp_diagnostic.mean(self.X_FG[x_valid_mask])
