@@ -111,6 +111,9 @@ def speed_of_sound(dens, pressure, edens, sat=False, integrate='forward', sample
     e_mean = edens['mean']
     e_low = edens['lower']
     e_high = edens['upper']
+    
+    # define constant
+    n0 = 0.16    # fm^-3
 
     # calculate the interpolants
     p_mean_interp = interp1d(dens, (p_mean), kind='cubic', \
@@ -122,30 +125,30 @@ def speed_of_sound(dens, pressure, edens, sat=False, integrate='forward', sample
     
     # define internal functions for integration
     def pres_mean(n):
-        return p_mean_interp(n) / n**2.0
+        return p_mean_interp(n) / (n)**2.0
     def pres_lower(n):
-        return p_lower_interp(n) / n**2.0
+        return p_lower_interp(n) / (n)**2.0
     def pres_upper(n):
-        return p_upper_interp(n) / n**2.0
+        return p_upper_interp(n) / (n)**2.0
 
     # perform integration
-    en_mean = np.zeros_like(p_mean)
+    en_mean = [] #np.zeros_like(p_mean)
     en_lower = []
     en_upper = []
         
     # integrating forwards
     if integrate == 'forward':
         
-        for j in range(len(dens_arr)):
+#        for j in range(len(dens_arr)):
         
         # Simpson's Rule integration
-            en_mean[j] = dens_arr[j] * (e_mean/dens_arr[0] + \
-                                        scint.simps((np.asarray(p_mean)[:j+1]/dens_arr[:j+1]**2.0), dens_arr[:j+1]))
-        print('We did Simpsons integration!')
+#             en_mean[j] = dens_arr[j] * (e_mean/dens_arr[0] + \
+#                                         scint.simps((np.asarray(p_mean)[:j+1]/dens_arr[:j+1]**2.0), dens_arr[:j+1]))
+#         print('We did Simpsons integration!')
 
         for n in dens_arr:
-#             en_mean.append(n*(e_mean/dens_arr[0] + \
-#                             scint.quad(lambda x : pres_mean(x), dens_arr[0], n, epsabs=1e-10, epsrel=1e-10)[0]))
+            en_mean.append(n*(e_mean/dens_arr[0] + \
+                            scint.quad(lambda x : pres_mean(x), dens_arr[0], n, epsabs=1e-10, epsrel=1e-10)[0]))
             
             en_lower.append(n*(e_low/dens_arr[0] + \
                             scint.quad(lambda x : pres_lower(x), dens_arr[0], n, epsabs=1e-10, epsrel=1e-10)[0]))
