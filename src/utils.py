@@ -4,8 +4,10 @@ import scipy.integrate as scint
 from scipy.interpolate import interp1d
 import numdifftools as ndt
 
+from pqcd_reworked import PQCD
+
 # define the speed of sound function 
-def speed_of_sound(dens, pressure, edens, sat=False, integrate='forward', sampled=False):
+def speed_of_sound(dens, pressure, edens=None, sat=False, integrate='forward', sampled=False):
 
     '''
     Function to evaluate the speed of sound of
@@ -70,44 +72,50 @@ def speed_of_sound(dens, pressure, edens, sat=False, integrate='forward', sample
             en_samples = np.zeros(len(pres))
             
             # outer term (not changing with n)
-            outer = (edens_0/dens[0])
+            outer = (edens_0/dens[-1])
 
+            # running integration backward from pQCD
             for j in range(len(dens)):
                         
                 # try dot product as a simple approximation
-                en_samples[j] = dens[j] * (outer + np.dot(pres[:j, i], dens_part[:j]))
+                #en_samples[j] = dens[j] * (outer + np.dot(pres[:j, i], dens_part[:j]))
                 
                 # Simpson's Rule integration
-                #en_samples[j] = dens[j] * (outer + scint.simps((pres[:j+1, i]/dens[:j+1]**2.0), dens[:j+1]))
+                en_samples[j] = dens[j] * (outer - scint.simps((pres[j:, i]/dens[j:]**2.0), dens[j:]))
 
             edens_full.append(en_samples)   # shape (n_samples, nB)
                         
         # now calculate chemical potential and derivative
-        mu_samples = np.asarray([(np.asarray(edens_full)[i,:] + pres[:,i]) for \
-                                 i in range(len(edens_full))])
-        log_mu_samples = np.log(mu_samples) # shape (n_samples, nB)
-                 
-        # speed of sound and return
-        cs2_log_samples = dens * np.gradient(log_mu_samples, dn, axis=1, edge_order=2) - np.ones(len(dens))
-  
-        # get mean, std_dev estimations out, store and return
-        cs2_log_mean = np.nanmean(cs2_log_samples, axis=0)
-        cs2_log_std = np.nanstd(cs2_log_samples, axis=0)
+        mu_samples = np.asarray([((np.asarray(edens_full)[i,:] + pres[:,i]))/dens for \
+                                 i in range(len(edens_full))])   # samples, nB
+
+        # get the results using 1/mu dP/dn instead (more stable)
+        print(pres.shape)  # nB, samples
+        dpdn_samples = np.gradient(pres, dn, axis=0, edge_order=2)
         
-        cs2_log = {
-            'mean': cs2_log_mean,
-            'std': cs2_log_std,
-            'samples': cs2_log_samples
+        print(dpdn_samples.shape)
+        
+        cs2_samples = np.asarray([(mu_samples[i,:])**(-1.0) * dpdn_samples[:,i] \
+                                  for i in range(len(edens_full))])
+        
+        # get mean, std_dev estimations out, store and return
+        cs2_mean = np.nanmean(cs2_samples, axis=0)
+        cs2_std = np.nanstd(cs2_samples, axis=0)
+        
+        cs2 = {
+            'mean': cs2_mean,
+            'std': cs2_std,
+            'samples': cs2_samples
         }
         
-        return cs2_log, edens_full
+        return cs2, edens_full
     
     # extract the necessary information
     p_mean = pressure['mean']
     p_low = pressure['mean'] - pressure['std_dev']
     p_high = pressure['mean'] + pressure['std_dev']
-
-    # extract the parameters for edens
+    
+    # extract the parameters for edens (for pqcd these will be full curves)
     e_mean = edens['mean']
     e_low = edens['lower']
     e_high = edens['upper']
@@ -122,7 +130,7 @@ def speed_of_sound(dens, pressure, edens, sat=False, integrate='forward', sample
                             fill_value='extrapolate')
     p_upper_interp = interp1d(dens, (p_high), kind='cubic', \
                             fill_value='extrapolate')
-    
+       
     # define internal functions for integration
     def pres_mean(n):
         return p_mean_interp(n) / (n)**2.0
@@ -132,20 +140,13 @@ def speed_of_sound(dens, pressure, edens, sat=False, integrate='forward', sample
         return p_upper_interp(n) / (n)**2.0
 
     # perform integration
-    en_mean = [] #np.zeros_like(p_mean)
+    en_mean = []
     en_lower = []
     en_upper = []
         
     # integrating forwards
     if integrate == 'forward':
         
-#        for j in range(len(dens_arr)):
-        
-        # Simpson's Rule integration
-#             en_mean[j] = dens_arr[j] * (e_mean/dens_arr[0] + \
-#                                         scint.simps((np.asarray(p_mean)[:j+1]/dens_arr[:j+1]**2.0), dens_arr[:j+1]))
-#         print('We did Simpsons integration!')
-
         for n in dens_arr:
             en_mean.append(n*(e_mean/dens_arr[0] + \
                             scint.quad(lambda x : pres_mean(x), dens_arr[0], n, epsabs=1e-10, epsrel=1e-10)[0]))
@@ -178,11 +179,6 @@ def speed_of_sound(dens, pressure, edens, sat=False, integrate='forward', sample
     dpdn_lower = ndt.Derivative(p_lower_interp, step=1e-6, method='central')
     dpdn_upper = ndt.Derivative(p_upper_interp, step=1e-6, method='central')
     
-    # calculate deriv of energy density
-    dedn_mean = np.gradient(edens_int['mean'], dens_arr, edge_order=2)
-    dedn_lower = np.gradient(edens_int['lower'], dens_arr, edge_order=2)
-    dedn_upper = np.gradient(edens_int['upper'], dens_arr, edge_order=2)
-    
     # calculate the chemical potential
     mu_mean = (en_mean + p_mean_interp(dens_arr))/dens_arr
     mu_lower = (en_lower + p_lower_interp(dens_arr))/dens_arr
@@ -192,12 +188,6 @@ def speed_of_sound(dens, pressure, edens, sat=False, integrate='forward', sample
     log_mu_mean = np.log(mu_mean)
     log_mu_lower = np.log(mu_lower)
     log_mu_upper = np.log(mu_upper)
-
-    # calculate speed of sound using energy density 
-    # derivative at desired density array
-    cs2_mean = dpdn_mean(dens_arr) / dedn_mean
-    cs2_lower = dpdn_lower(dens_arr) / dedn_upper
-    cs2_upper = dpdn_upper(dens_arr) / dedn_lower
     
     # calculate speed of sound using chemical potential
     # at desired density array
@@ -213,13 +203,6 @@ def speed_of_sound(dens, pressure, edens, sat=False, integrate='forward', sample
     
     # collect into dict and return
     cs2 = {
-        'mean' : cs2_mean,
-        'lower' : cs2_lower,
-        'upper' : cs2_upper
-    }
-    
-    # collect other method and return
-    cs2_mu = {
         'mean' : cs2_mu_mean,
         'lower' : cs2_mu_lower,
         'upper' : cs2_mu_upper
@@ -239,4 +222,131 @@ def speed_of_sound(dens, pressure, edens, sat=False, integrate='forward', sample
         'upper':mu_upper
     }
 
-    return dens_arr, cs2, cs2_mu, cs2_log, edens_int, mu_dict
+    return dens_arr, cs2, cs2_log, edens_int, mu_dict
+
+
+def boundary_conditions(dens, pres_dict, index=0):
+    
+    # call pQCD class
+    pqcd = PQCD(X=1, Nf=2) # classic implementation here
+    
+    # constants
+    hbarc = 197.327 # Mev fm
+    
+    # unpack dictionary
+    pres_FG = pres_dict['FG']
+    pres_NLO = pres_dict['NLO']
+    pres_N2LO = pres_dict['N2LO']
+    
+    # set up new dictionary for eps(n) BCs
+    edens_FG = dict()
+    edens_NLO = dict()
+    edens_N2LO = dict()
+    
+    # make mu_FG array from the selected density array (no playing around)
+    n_q = dens*3.0  # n_q [fm^-3]
+
+    # convert to GeV^3 for mu_q
+    conversion_fm3 = ((1000.0)**(3.0))/((197.33)**(3.0)) # [fm^-3]  (do the opposite of this)
+    n_q = n_q/conversion_fm3  # [GeV^3]
+
+    # invert to get mu
+    _, _, mu_FG = pqcd.inversion(n_mu=n_q)  # [GeV] # these are quark chemical potentials
+    mU_FG = mu_FG[:, None]
+    
+    # FG BCs
+    edens_FG['mean'] = ((3.0 / (2 * np.pi**2.0)) * (3.0 * np.pi**2.0 * dens/2.0)**(4.0/3.0) * hbarc)[index]
+    edens_FG['lower'] = (dens*3*1000.*mu_FG - (pres_dict_FG['mean']-pres_dict_FG['std_dev']))[index]
+    edens_FG['upper'] = (dens*3*1000.*mu_FG - (pres_dict_FG['mean']+pres_dict_FG['std_dev']))[index]
+    
+    # NLO BCs
+    edens_NLO['mean'] = ((pqcd.mu_1(mU_FG)[:,0]*1000.) * 3.0 * dens - \
+                         (pres_dict_NLO['mean'] - pres_dict_FG['mean']))[index]
+    edens_NLO['lower'] = ((pqcd.mu_1(mU_FG)[:,0]*1000.) * 3.0 * dens \
+    - ((pres_dict_NLO['mean'] - pres_dict_FG['mean']) - \
+       (pres_dict_NLO['std_dev']-pres_dict_FG['std_dev'])))[index]
+    edens_NLO['upper'] = ((pqcd.mu_1(mU_FG)[:,0]*1000.) * 3.0 * dens \
+    - ((pres_dict_NLO['mean'] - pres_dict_FG['mean']) + \
+       (pres_dict_NLO['std_dev']-pres_dict_FG['std_dev'])))[index]
+    
+    # N2LO BCs
+    edens_N2LO['mean'] = ((pqcd.mu_2(mU_FG)[:,0]*1000.) * 3.0 * dens - \
+                          (pres_dict_N2LO['mean'] - pres_dict_NLO['mean']))[index]
+    
+    edens_N2LO['lower'] = ((pqcd.mu_2(mU_FG)[:,0]*1000.) * 3.0 * dens - \
+                           ((pres_dict_N2LO['mean'] - pres_dict_NLO['mean']) - \
+                            (pres_dict_N2LO['std_dev']-pres_dict_NLO['std_dev'])))[index]
+   
+    edens_N2LO['upper'] = ((pqcd.mu_2(mU_FG)[:,0]*1000.) * 3.0 * dens - \
+                           ((pres_dict_N2LO['mean'] - pres_dict_NLO['mean']) + \
+                            (pres_dict_N2LO['std_dev']-pres_dict_NLO['std_dev'])))[index]
+        
+    # add corrections to single out each order
+    edens_NLO['mean'] += edens_FG['mean']
+    edens_NLO['lower'] += edens_FG['lower']
+    edens_NLO['upper'] += edens_FG['upper']
+    
+    edens_N2LO['mean'] += edens_NLO['mean']
+    edens_N2LO['lower'] += edens_NLO['lower']
+    edens_N2LO['upper'] += edens_NLO['upper']
+
+    # combine into dictionary and return
+    edens_dict = {
+        'FG': edens_FG,
+        'NLO': edens_NLO,
+        'N2LO': edens_N2LO
+    }
+    
+    return mu_FG, mU_FG, edens_dict
+
+
+def pal_eos(kf, cc):
+    
+    '''
+    Python version of PAL EOS for maintaining causality. 
+    Coupling constants found via the FORTRAN code paleoscc.f90,
+    not included in this function. This function is designed
+    to be used as a mean function in the GP for chiral EFT.
+    '''
+    
+    # extract coupling constants from cc dict
+    K0 = 260. #cc['K0']
+    A = -47.83618 #cc['A']
+    B = 31.01158 #cc['B']
+    Bp = 0. #cc['Bp']
+    Sig = 1.500259  #cc['Sig']
+    
+    # other constants
+    hc = 197.33
+    mn = 939.
+    kf0 = (1.5*np.pi**2.*0.16)**(1./3.)
+    ef0 = (hc*kf0)**2./2./939.
+    sufac = (2.**(2./3.)-1.)*0.6*ef0
+    s0 = 30.
+    
+    # other coupling constants
+    C1 = -83.841
+    C2 = 22.999
+    Lambda1 = 1.5*kf0
+    Lambda2 = 3.*kf0
+    
+    # conversion from kf to n to solve that problem
+    n = 2.0 * kf**3.0 / (3.0 * np.pi**2.0)
+    
+    # write it as E/A first and then move to pressure for output
+    one = mn * n0 * (n/n0) + (3.0/5.0)*ef0*n0*(n/n0)**(5.0/3.0)
+    two = 0.5*A*n0*(n/n0)**2.0 + (B*n0*(n/n0)**(Sig+1.0))/(1.0 + Bp * (n/n0)**(Sig - 1.0))
+    sum_1 = C1 * (Lambda1/kf0)**3.0 * ((Lambda1/kf) - np.arctan(Lambda1/kf))
+    sum_2 = C2 * (Lambda2/kf0)**3.0 * ((Lambda2/kf) - np.arctan(Lambda2/kf))
+    three = 3.0 * n0 * (n/n0) * (sum_1 + sum_2)
+    
+    eps_kf = one + two + three
+    
+    # convert to E/A from eps
+    enperpart_kf = eps_kf / n
+    
+    # now calculate pressure using differentiation
+    derivEA = np.gradient(enperpart_kf, kf)
+    pressure_kf = (n * kf / 3.0) * derivEA
+    
+    return pressure_kf

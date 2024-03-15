@@ -8,10 +8,10 @@ from matplotlib.legend_handler import HandlerLine2D
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator, MaxNLocator
 import numpy as np
 
-import sys
-sys.path.append('../buqeyenm/nuclear-matter-convergence/')
-from nuclear_matter.graphs import *
-from nuclear_matter import fermi_momentum
+# import sys
+# sys.path.append('../buqeyenm/nuclear-matter-convergence/')  # decouple
+# from nuclear_matter.graphs import *
+# from nuclear_matter import fermi_momentum
 
 
 def setup_rc_params(presentation=False):
@@ -81,6 +81,39 @@ def setup_rc_params(presentation=False):
     # bbox = 'tight' can distort the figure size when saved (that's its purpose).
     # mpl.rc('savefig', transparent=False, bbox='tight', pad_inches=0.04, dpi=350, format='png')
     #mpl.rc('savefig', transparent=False, bbox=None, dpi=400, format='png')
+    
+    
+def fermi_momentum(density, degeneracy):
+    """Computes the Fermi momentum of infinite matter in inverse fermi
+
+    Parameters
+    ----------
+    density : array
+        The density in inverse fermi^3
+    degeneracy : int
+        The degeneracy factor [g]. Equals 2 for neutron matter and 4 for symmetric matter.
+    """
+    return (6 * np.pi**2 * density / degeneracy)**(1./3)
+
+
+def lighten_color(color, amount=0.5):
+    """
+    Lightens the given color by multiplying (1-luminosity) by the given amount.
+    Input can be matplotlib color string, hex string, or RGB tuple.
+
+    Examples:
+    >> lighten_color('g', 0.3)
+    >> lighten_color('#F034A3', 0.6)
+    >> lighten_color((.3,.55,.1), 0.5)
+    """
+    import matplotlib.colors as mc
+    import colorsys
+    try:
+        c = mc.cnames[color]
+    except:
+        c = color
+    c = colorsys.rgb_to_hls(*mc.to_rgb(c))
+    return colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2])
 
 
 def highlight_nsat(ax, nsat=0.164, zorder=0, band=False):
@@ -197,3 +230,84 @@ def plot_obs_panels(density, y, dy, orders, density_data=None, y_data=None, colo
     axes[0,0].set_xlabel('')
     axes[0,1].set_xlabel('')
     return fig, axes
+
+class OrderBandsHandler(legend_handler.HandlerPolyCollection):
+
+    def create_artists(self, legend, orig_handle, xdescent, ydescent, width, height, fontsize, trans):
+        light_rect = orig_handle[0]
+        dark_rect = orig_handle[1]
+        dark_line = orig_handle[2]
+        dark_color = dark_line.get_color()
+        color = dark_rect.get_facecolor()[0]
+        light_color = light_rect.get_facecolor()[0]
+        lw = 0.8
+
+        outer_rect = mpatches.Rectangle(
+            [0, 0], 1, 1, facecolor='none', edgecolor=dark_color,
+            lw=lw
+        )
+        dark_rect = mpatches.Rectangle(
+            [0, 0], 1, 1, facecolor=color, edgecolor='none',
+            lw=0
+        )
+        light_rect = mpatches.Rectangle(
+            [0, 0], 1, 1, facecolor=light_color, edgecolor='none',
+            lw=0
+        )
+
+        patches = []
+
+        factor = 2
+        dark_height = 0.4 * height
+        #         patches += super().create_artists(legend, light_rect, xdescent, ydescent, width, height, fontsize, trans)
+        #         patches += super().create_artists(
+        #             legend, dark_rect, xdescent, ydescent-height/(2*factor), width, height/factor, fontsize, trans)
+        # print(ydescent, height)
+        patches += legend_handler.HandlerPatch().create_artists(
+            legend, light_rect, xdescent, ydescent, width, height, fontsize, trans)
+        # patches += legend_handler.HandlerPatch().create_artists(
+        #     legend, dark_rect, xdescent, ydescent - height / (2 * factor), width, height / factor, fontsize, trans)
+        patches += legend_handler.HandlerPatch().create_artists(
+            legend, dark_rect, xdescent, ydescent - height / 2 + dark_height/2, width, dark_height, fontsize, trans)
+
+        outer_patches = legend_handler.HandlerPatch().create_artists(
+            legend, outer_rect, xdescent, ydescent, width, height, fontsize, trans)
+        outer_patches[0].set_linewidth(lw / 2)
+        patches += outer_patches
+
+        # line_patches = HandlerLine2D().create_artists(
+        #     legend, dark_line, xdescent, ydescent, width, height, fontsize, trans)
+        # line_patches[0].set_linewidth(lw)
+        # patches += line_patches
+
+        return patches
+
+
+def compute_filled_handles(colors, light_colors, dark_colors):
+    handles = []
+    for color, light_color, dark_color in zip(colors, light_colors, dark_colors):
+        fill_light = plt.fill_between([], [], [], alpha=1, color=light_color)
+        fill_normal = plt.fill_between([], [], [], alpha=1, color=color)
+        line_dark = plt.plot([], [], color=dark_color, dash_capstyle='butt', solid_capstyle='butt')[0]
+
+        handles.append((fill_light, fill_normal, line_dark))
+    return handles
+
+
+def add_top_order_legend(fig, ax_left, ax_right, orders, colors, light_colors, dark_colors):
+    fig.canvas.draw()  # Must draw to get positions right before getting locations
+    # Get the corner of the upper right plot in display coordinates
+    upper_right_display = ax_right.transAxes.transform((1, 1))
+    # Now put it in axes[0,0] coords
+    upper_right_axes00 = ax_left.transAxes.inverted().transform(upper_right_display)
+    handlers_ords = compute_filled_handles(colors, light_colors, dark_colors)
+    # Must use axes[0,0] legend for constrained layout to work with it
+    return ax_left.legend(
+        handlers_ords, orders, ncol=4,
+        loc='lower left', bbox_to_anchor=(0, 1.02, upper_right_axes00[0], 1.),
+        mode='expand',
+        columnspacing=0,
+        handletextpad=0.5,
+        fancybox=False, borderaxespad=0,
+        handler_map={tuple: OrderBandsHandler()}
+    )
