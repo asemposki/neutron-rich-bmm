@@ -1,10 +1,133 @@
 # import necessary packages
 import numpy as np
 import scipy.integrate as scint
+import scipy as sp
 from scipy.interpolate import interp1d
 import numdifftools as ndt
 
 from pqcd_reworked import PQCD
+
+# function for obtaining training data for GP implementation
+def gp_data(data_xeft, data_pqcd, cutoff=40):
+    
+    # split into training and testing data
+    n_xeft = data_xeft["density"]
+    n_pqcd = data_pqcd["density"]
+    p_mean_xeft = data_xeft["mean"][:, -1]
+    p_stdv_xeft = data_xeft["std_dev"][:, -1]
+    p_cov_xeft = data_xeft["cov"][..., -1]
+
+    p_mean_pqcd = data_pqcd["mean"][:, -1]
+    p_stdv_pqcd = data_pqcd["std_dev"][:, -1]
+    p_cov_pqcd = data_pqcd["cov"][..., -1]
+    
+    # cut into training and testing sets
+    # training data
+    n_train_xeft = n_xeft[1::2]
+    n_train_pqcd = n_pqcd[1::2]
+
+    chiral_train = {
+        'dens': n_train_xeft,
+        'mean': p_mean_xeft[1::2],
+        'std': p_stdv_xeft[1::2],
+        'cov': p_cov_xeft[1::2, 1::2]
+    }
+    pqcd_train = {
+        'dens': n_train_pqcd,
+        'mean': p_mean_pqcd[1::2],
+        'std': p_stdv_pqcd[1::2],
+        'cov': p_cov_pqcd[1::2, 1::2]
+    }
+
+    # testing data
+    n_test_xeft = n_xeft[::2]
+    n_test_pqcd = n_pqcd[::2]
+
+    chiral_test = {
+        'dens': n_test_xeft,
+        'mean': p_mean_xeft[::2],
+        'std': p_stdv_xeft[::2],
+        'cov': p_cov_xeft[::2,::2]
+    }
+    pqcd_test = {
+        'dens': n_test_pqcd,
+        'mean': p_mean_pqcd[::2],
+        'std': p_stdv_pqcd[::2],
+        'cov': p_cov_pqcd[::2,::2]
+    }
+    
+    # store cutoff in terms of density
+    pqcd_dens_cutoff = cutoff * 0.16
+    
+    # cut the training sets up
+    if chiral_train['dens'][-1] > 0.34:
+        chiral_cutoff = np.where([chiral_train['dens']>=0.34])[1][0]
+    else:
+        chiral_cutoff = -1
+        
+    chiral_tr = {}
+    for key,i in chiral_train.items():
+        if chiral_train[key].ndim == 1:
+            chiral_tr[key] = chiral_train[key][:chiral_cutoff]
+        elif chiral_train[key].ndim == 2:
+            chiral_tr[key] = chiral_train[key][:chiral_cutoff, :chiral_cutoff]
+
+    # chiral point selection
+    log_space_chiral = get_linear_mask_in_log_space(chiral_train['dens'], chiral_train['dens'][40],\
+                                                    chiral_train['dens'][chiral_cutoff], 0.25, base=np.e)
+    chiral_tr_final = {}
+    for key,i in chiral_tr.items():
+        if chiral_tr[key].ndim == 1:
+            chiral_tr_final[key] = chiral_tr[key][40::30]#[log_space_chiral[:-1]]
+        elif chiral_tr[key].ndim == 2:
+            chiral_tr_final[key] = chiral_tr[key][40::30, 40::30]#[log_space_chiral[:-1]][:, log_space_chiral[:-1]]
+
+    print(chiral_tr_final['dens'].shape, chiral_tr_final['mean'].shape, \
+          chiral_tr_final['std'].shape, chiral_tr_final['cov'].shape)
+    print(chiral_tr_final['dens']/0.16)
+    print(chiral_tr_final['dens'])
+
+    # pqcd point selection
+    if pqcd_train['dens'][-1] < pqcd_dens_cutoff:
+        pqcd_cutoff = min(pqcd_train['dens'])
+    else:
+        pqcd_cutoff = np.where([pqcd_train['dens']>=pqcd_dens_cutoff])[1][0]
+
+    pqcd_tr = {}
+    for key,i in pqcd_train.items():
+        if pqcd_train[key].ndim == 1:
+            pqcd_tr[key] = pqcd_train[key][pqcd_cutoff:]
+        elif pqcd_train[key].ndim == 2:
+            pqcd_tr[key] = pqcd_train[key][pqcd_cutoff:, pqcd_cutoff:]
+    
+    # concatenate everything 
+    log_space_pqcd = get_linear_mask_in_log_space(pqcd_tr['dens'], pqcd_tr['dens'][0],\
+                                                    pqcd_tr['dens'][-1], 0.20, base=np.e)
+    pqcd_tr_final = {}
+    for key,i in pqcd_tr.items():
+        if pqcd_tr[key].ndim == 1:
+            pqcd_tr_final[key] = pqcd_tr[key][::50]
+        elif pqcd_tr[key].ndim == 2:
+            pqcd_tr_final[key] = pqcd_tr[key][::50, ::50]#[log_space_pqcd][:, log_space_pqcd]
+
+    print(chiral_tr_final['dens'].shape, chiral_tr_final['mean'].shape, \
+          chiral_tr_final['std'].shape, chiral_tr_final['cov'].shape)
+    print(pqcd_tr_final['dens'].shape, pqcd_tr_final['mean'].shape, \
+          pqcd_tr_final['std'].shape, pqcd_tr_final['cov'].shape)
+    print(pqcd_tr_final['dens']/0.16)
+
+    # now concatenate into block diagonal matrix
+    training_set = {
+        'dens' : np.concatenate((chiral_tr_final['dens'], pqcd_tr_final['dens'])),
+        'mean' : np.concatenate((chiral_tr_final['mean'], pqcd_tr_final['mean'])),
+        'std' : np.concatenate((chiral_tr_final['std'], pqcd_tr_final['std'])),
+        'cov' : sp.linalg.block_diag(chiral_tr_final['cov'], pqcd_tr_final['cov'])
+    }
+
+    # print the covariance to check
+    print('Cov shape:', training_set['cov'].shape)
+    
+    return training_set
 
 # define the speed of sound function 
 def speed_of_sound(dens, pressure, edens=None, sat=False, integrate='forward', sampled=False):
@@ -300,7 +423,7 @@ def boundary_conditions(dens, pres_dict, index=0):
     return mu_FG, mU_FG, edens_dict
 
 
-def pal_eos(kf, cc):
+def pal_eos(kf):
     
     '''
     Python version of PAL EOS for maintaining causality. 
@@ -318,6 +441,7 @@ def pal_eos(kf, cc):
     
     # other constants
     hc = 197.33
+    n0 = 0.16
     mn = 939.
     kf0 = (1.5*np.pi**2.*0.16)**(1./3.)
     ef0 = (hc*kf0)**2./2./939.
@@ -347,6 +471,39 @@ def pal_eos(kf, cc):
     
     # now calculate pressure using differentiation
     derivEA = np.gradient(enperpart_kf, kf)
-    pressure_kf = (n * kf / 3.0) * derivEA
+    pressure_kf = (n * kf / 3.0) * np.asarray(derivEA)
+    
+    return enperpart_kf
+
+def pressure_pal_eos(kf):
+    
+    # calculate n first again (so we don't have to pass it in)
+    n = 2.0 * kf**3.0 / (3.0 * np.pi**2.0)
+    
+    # now calculate pressure using differentiation
+    derivEA = ndt.Derivative(pal_eos, step=1e-4, method='central')
+    pressure_kf = (n * kf / 3.0) * np.asarray(derivEA(kf))
     
     return pressure_kf
+
+def get_closest_mask(array, values):
+    """Returns a mask corresponding to the locations in array that are closest to values.
+    
+    array and values must be sorted
+    """
+    idxs = np.searchsorted(array, values, side="left")
+
+    # find indexes where previous index is closer
+    prev_idx_is_less = ((idxs == len(array))|(np.fabs(values - array[np.maximum(idxs-1, 0)]) \
+                                              < np.fabs(values - array[np.minimum(idxs, len(array)-1)])))
+    idxs[prev_idx_is_less] -= 1
+    return np.isin(np.arange(len(array)), idxs)
+
+def get_linear_mask_in_log_space(x, x_min, x_max, log_x_step, base=np.e):
+    lin_x = np.arange(
+        np.emath.logn(n=base, x=x_min),
+        np.emath.logn(n=base, x=x_max),
+        log_x_step
+    )
+    closest = get_closest_mask(np.emath.logn(n=base, x=x), lin_x)
+    return (x <= x_max) & (x >= x_min) & closest
