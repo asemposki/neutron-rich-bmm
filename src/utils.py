@@ -199,9 +199,6 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, integrate='forward', s
 
             # running integration backward from pQCD
             for j in range(len(dens)):
-                        
-                # try dot product as a simple approximation
-                #en_samples[j] = dens[j] * (outer + np.dot(pres[:j, i], dens_part[:j]))
                 
                 # Simpson's Rule integration
                 en_samples[j] = dens[j] * (outer - scint.simps((pres[j:, i]/dens[j:]**2.0), dens[j:]))
@@ -237,12 +234,12 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, integrate='forward', s
     p_mean = pressure['mean']
     p_low = pressure['mean'] - pressure['std_dev']
     p_high = pressure['mean'] + pressure['std_dev']
-    
+        
     # extract the parameters for edens (for pqcd these will be full curves)
     e_mean = edens['mean']
     e_low = edens['lower']
     e_high = edens['upper']
-    
+        
     # define constant
     n0 = 0.16    # fm^-3
 
@@ -317,7 +314,7 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, integrate='forward', s
     cs2_mu_mean = dpdn_mean(dens_arr) / mu_mean
     cs2_mu_lower = dpdn_lower(dens_arr) / mu_upper
     cs2_mu_upper = dpdn_upper(dens_arr) / mu_lower
-    
+           
     # calculate speed of sound using log(mu)
     # at desired density array
     cs2_log_mean = dens_arr * np.gradient(log_mu_mean, dens_arr, edge_order=2)
@@ -438,6 +435,12 @@ def pal_eos(kf):
     B = 31.01158 #cc['B']
     Bp = 0. #cc['Bp']
     Sig = 1.500259  #cc['Sig']
+    
+    # if we want Bp != 0.0
+#     A = -22.97032
+#     B = 22.3410432
+#     Bp = 0.2
+#     Sig = 1.9999723
     
     # other constants
     hc = 197.33
