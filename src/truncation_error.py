@@ -104,7 +104,7 @@ class Truncation:
 #        mu_mask = mu    # no mask applied
         
         # set the mask s.t. it picks the same training point number each time
-        mask_num = len(mu_mask) // 1.5  # original is 2 here for Nf*alpha_s/pi
+        mask_num = len(mu_mask) // 2  # original is 2 here for Nf*alpha_s/pi
         mask_true = np.array([(i) % mask_num == 0 for i in range(len(mu_mask))])  # i-3 for <40n0
         
         # concatenate with a mask over the other elements of mu before low_bound
@@ -115,7 +115,7 @@ class Truncation:
         return self.mask 
     
     
-    def gp_kernel_primo(self, ls=3.0, sd=0.2, center=0, nugget=1e-6):
+    def gp_kernel(self, ls=3.0, sd=0.5, center=0, nugget=1e-10):
 
         '''
         The kernel that we will use both for interpolating the 
@@ -129,19 +129,18 @@ class Truncation:
 
         Returns:
         --------
-        self.kernel : sklearn object
-            The kernel needed for the GPs in both 'uncertainties' and 
-            'gp_interpolation'. 
+        kernel : sklearn object
+            The kernel needed for the GPs. 
         '''
 
         self.ls = ls    # starting guess; can get really close if we set 0.25 and fix it
         self.sd = sd    # makes a difference on the band of the regression curve for c_2 
         self.center = center
-        self.nugget = nugget #nugget  # nugget goes to Cholesky decomp, not the kernel (kernel has own nugget)
-        self.kernel = RBF(length_scale=self.ls) + \
-        WhiteKernel(noise_level=self.nugget) # letting this vary 
+        self.nugget = nugget # nugget for the Cholesky, not the kernel 
+        kernel = RBF(length_scale=self.ls)# + \
+       # WhiteKernel(noise_level=self.nugget, noise_level_bounds='fixed')
 
-        return self.kernel
+        return kernel
     
 
     def gp_interpolation(self, center=0.0, sd=1.0):
@@ -179,9 +178,9 @@ class Truncation:
         self.mask = self.gp_mask(self.x)
 
         # Set up gp objects with fixed mean and standard deviation 
-        self.kernel = self.gp_kernel_primo(ls=1.0, sd=0.2, center=0., nugget=1e-4)  
+        kernel = self.gp_kernel(ls=3.0, sd=sd, center=0)  
         self.gp_interp = gm.ConjugateGaussianProcess(
-            kernel=self.kernel, center=center, disp=0, df=3.0, scale=sd, nugget=0) 
+            kernel=kernel, center=center, disp=0, df=3.0, scale=sd, nugget=0) 
         
         # fit and predict using the interpolated GP
         if self.orders_mask is not None:
@@ -195,13 +194,10 @@ class Truncation:
         print(self.gp_interp.kernel_)
         print(self.gp_interp.cov_factor_)
 
-        # extract the kernel for later use 
-        self.kernel = self.gp_interp.kernel_
-
         return pred, std, underlying_std
     
 
-    def uncertainties(self, data=None, expQ=None, yref=None, excluded=None):
+    def uncertainties(self, data=None, expQ=None, yref=None, sd=0.5, nugget=1e-10, excluded=None):
 
         '''
         Calculation of the truncation error bands for the pQCD EOS, using 
@@ -230,48 +226,41 @@ class Truncation:
 
         '''
         
-        # construct the mask
-#         if self.x_FG is None:
-#             self.x_FG = self.x
-#             self.X_FG = self.X
+        # construct mask
         self.mask = self.gp_mask(self.x)
-    #   self.mask = self.gp_mask(self.x_FG)
 
         # get correct data shape
         if data is None:         
             data = self.data_all[:, :self.n_orders]
         else:
             data = data[:, :self.n_orders]
+            
+        # save nugget
+        self.nugget = nugget
 
         # set up the truncation GP
-        self.kernel = self.gp_kernel_primo(ls=3.0, sd=0.2, center=0, nugget=1e-6) # letting it fit here
+        self.kernel = self.gp_kernel(ls=3.0, sd=sd, center=0, nugget=self.nugget) 
         self.trunc_gp = gm.TruncationGP(kernel=self.kernel, ref=yref, \
-                            ratio=expQ, disp=0, df=3.0, scale=self.sd, excluded=excluded)  # same as the interpolation GP
+                            ratio=expQ, disp=0, df=3.0, scale=sd, excluded=excluded, nugget=self.nugget)
         
-        #self.trunc_gp.fit(self.X_FG[self.mask], data[self.mask], orders=self.orders)
         self.trunc_gp.fit(self.X[self.mask], data[self.mask], orders=self.orders)
-
-#         std_trunc = np.zeros([len(self.X_FG), self.n_orders])
-#         cov_trunc = np.zeros([len(self.X_FG), len(self.X_FG), self.n_orders])
-#         for i, n in enumerate(self.orders):
-#             # Only get the uncertainty due to truncation (kind='trunc')
-#             _, std_trunc[:,n] = self.trunc_gp.predict(self.X_FG, order=n, return_std=True, kind='trunc')
-#             _, cov_trunc[:,:,n] = self.trunc_gp.predict(self.X_FG, order=n, return_std=False, return_cov=True, kind='trunc')
         
         std_trunc = np.zeros([len(self.X), self.n_orders])
         cov_trunc = np.zeros([len(self.X), len(self.X), self.n_orders])
         for i, n in enumerate(self.orders):
             # Only get the uncertainty due to truncation (kind='trunc')
-            _, std_trunc[:,n] = self.trunc_gp.predict(self.X, order=n, return_std=True, kind='trunc')
-            _, cov_trunc[:,:,n] = self.trunc_gp.predict(self.X, order=n, return_std=False, return_cov=True, kind='trunc')
+            _, std_trunc[:,n] = self.trunc_gp.predict(self.X, order=n, return_std=True, kind='trunc', pred_noise=True)
+            _, cov_trunc[:,:,n] = self.trunc_gp.predict(self.X, order=n, return_std=False, \
+                                                        return_cov=True, kind='trunc', pred_noise=True)
             
         # external access without altering return
         self.cov_trunc = cov_trunc
         
-        # look at kernel hyperparameters
+        # check the kernel hyperparameters
         print(self.trunc_gp.coeffs_process.kernel_)
+        print(self.trunc_gp.coeffs_process.nugget)
         
-        return data, self.coeffs, std_trunc
+        return data, self.coeffs, std_trunc, cov_trunc
     
     
     # masking for diagnostics ONLY (taken from Jordan Melendez's gsum code directly)
@@ -330,48 +319,25 @@ class Truncation:
             for j in self.X[x_valid_mask]:
                 if i == j:
                     print('Found an equal value!')
-
-        # call same kernel for diagnostics
-        gp_diagnostic = gm.ConjugateGaussianProcess(kernel=self.kernel, \
-                                                    center=self.center, disp=0, df=3.0, scale=self.sd) 
-        gp_diagnostic.fit(self.X[x_train_mask], self.coeffs[x_train_mask])
-        pred, std = gp_diagnostic.predict(self.X, return_std=True)
-        underlying_std = np.sqrt(gp_diagnostic.cov_factor_)
+    
+        # already fit the GP kernel, do diagnostics directly now 
+        underlying_std = np.sqrt(self.trunc_gp.coeffs_process.cov_factor_)
         print(underlying_std)
+        print(self.trunc_gp.coeffs_process.nugget)
 
-        # plot the result of the coefficient interpolation
-        fig, ax = plt.subplots(figsize=(3.2, 3.2))
-        ax.set_xlim(0.4, max(self.X))
-        ax.set_xlabel(r'$\mu(n)$')
-        for i, n in enumerate(self.orders):
-            ax.plot(self.x, pred[:, i], c=colors[i], zorder=i-5, ls='--')
-            ax.plot(self.x, self.coeffs[:, i], c=colors[i], zorder=i-5)
-            ax.plot(self.x[x_train_mask], self.coeffs[x_train_mask, i], c=colors[i], zorder=i-5, ls='', marker='o',
-                    label=r'$c_{}$'.format(n))
-            ax.fill_between(self.x, pred[:, i] + 1.96*std, pred[:, i] - 1.96*std, zorder=i-5,
-                             facecolor=light_colors[i], edgecolor=colors[i], lw=edgewidth, alpha=1)
-
-        # Format
-        ax.axhline(2*underlying_std, 0, 1, c='gray', zorder=-10, lw=1)
-        ax.axhline(-2*underlying_std, 0, 1, c='gray', zorder=-10, lw=1)
-        ax.axhline(0, 0, 1, c='k', zorder=-10, lw=1)
-        ax.legend(ncol=2, borderaxespad=0.5, borderpad=0.4)
-        fig.tight_layout();
-        
-        print(r'Std. dev. expected value:', underlying_std)
+        gp_diagnostic = self.trunc_gp.coeffs_process  # set equal here (same object)
         print('Calculated value :', gp_diagnostic.df_ * gp_diagnostic.scale_**2 / (gp_diagnostic.df_ + 2))
 
         # Print out the kernel of the fitted GP
         print('Trained kernel: ', self.trunc_gp.coeffs_process.kernel_)
-        print('Diagnostic kernel: ', gp_diagnostic.kernel_)
-        print('Scale now: ', gp_diagnostic.scale_)
+        print('Scale: ', gp_diagnostic.scale_)
         
         # MD diagnostic plotting
         mean_underlying = gp_diagnostic.mean(self.X[x_valid_mask])
         cov_underlying = gp_diagnostic.cov(self.X[x_valid_mask])
-        print(cov_underlying)
         print('Condition number:', np.linalg.cond(cov_underlying))
-
+        
+        # coeffs coming from initial set up
         gdgn = gm.GraphicalDiagnostic(self.coeffs[x_valid_mask], mean_underlying, cov_underlying, colors=colors,
                                       gray='gray', black='k')
 
