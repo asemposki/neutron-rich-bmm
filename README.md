@@ -1,20 +1,26 @@
-# Bayesian Model Mixing and the dense matter equation of state: an exploration of symmetric matter
+# From chiral EFT to perturbative QCD: a Bayesian model mixing approach to symmetric nuclear matter
 
 ## About 
 
 A joint effort between members of the Bayesian Analysis of Nuclear Dynamics (BAND) collaboration and Bayesian Uncertainty Quantification (Errors in Your EFT) 
 (BUQEYE) collaboration to perform principled uncertainty quantification of the dense matter equation of state (EOS) using the novel techniques 
-in Bayesian Model Mixing (BMM). 
+in Bayesian model mixing (BMM). 
+
+## Installing the repository and its dependencies
+
+This repository is built to work off of the nuclear-matter-convergence repository of the BUQEYE collaboration, [found here](https://github.com/buqeye/nuclear-matter-convergence). As such, it has some dependencies that need to be built in the virtual environment before this repository can be run. Follow the steps below to complete this installation.
+
+1. Create a new Conda environment: `conda create -n BUQEYE python==3.9.16`
+2. Activate the environment: `conda activate BUQEYE`
+3. Install jupyterlab and jupyter notebook: `conda install jupyterlab, jupyter notebook`
+4. Clone this repository by copying the link in the code tab above: `git clone https://github.com/asemposki/EOS_BMM_SNM.git`
+5. Within the above repository folder, git clone gsum: `git clone https://github.com/buqeye/gsum.git` and pip install this in gsum directory using `pip install .`
+6. Also within the repository folder, git clone gptools: `git clone https://github.com/markchil/gptools.git` and pip install this in the gptools directory using `pip install .`
+7. Still within this repository's main folder, git clone the nuclear-matter-convergence repo using `git clone https://github.com/buqeye/nuclear-matter-convergence.git` and `pip install .` within the nuclear-matter-convergence folder
+8. Now that this is all done, you can test the structure by going into the `notebooks` folder and saying `jupyter notebook` in terminal, and this should load up the notebooks to be run. You should be all set!
 
 ## Navigation
-
-The following notebooks are currently included in this repo:
-
-1) Pressure_Mixing_cs2.ipynb : this notebook runs the Bayesian model mixing of the results from ChEFT and pQCD. Includes the speed of sound at the end of the notebook.
-
-2) derivatives-bands.ipynb : this is the old notebook from nuclear-matter-convergence, reworked so that the ChEFT results can be run with extrapolated truncation errors. The class file where the changes were made, derivatives.py, is not currently within the repo (yet).
-
-3) pQCD_Gorda_gsum.ipynb : this notebook contains all current work for the pQCD EOS, run first with respect to chemical potential, and then with respect to density via the Kohn, Luttinger, and Ward (KLW) inversion. Speed of sound is calculated at the end of this notebook, and results are saved for use in Pressure_Mixing_cs2.ipynb.
+[Fill this in later.]
 
 ## Contacts
 
