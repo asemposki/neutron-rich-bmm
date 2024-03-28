@@ -19,27 +19,24 @@ import matplotlib.patches as mpatches
 import pandas as pd
 import time
 import corner
-
-import sys
-sys.path.append('../buqeyenm/')
-#from gptools import gptools
 import gptools
 
 import sys
-sys.path.append('../buqeyenm/nuclear-matter-convergence/')
+sys.path.append('../nuclear-matter-convergence/nuclear_matter/')
 
-from nuclear_matter import fermi_momentum, nuclear_density
-from nuclear_matter import compute_pressure, compute_pressure_cov
-from nuclear_matter import compute_slope, compute_slope_cov
-from nuclear_matter import compute_compressibility, compute_compressibility_cov
-from nuclear_matter import compute_speed_of_sound
-from nuclear_matter import setup_rc_params
-from nuclear_matter import InputData
-from nuclear_matter import confidence_ellipse, confidence_ellipse_mean_cov
-from nuclear_matter.graphs import add_top_order_legend, compute_filled_handles, plot_empirical_saturation
-from nuclear_matter.derivatives import ObservableContainer, SymmetryEnergyContainer
-from nuclear_matter import kf_derivative_wrt_density
+from matter import fermi_momentum, nuclear_density
+from matter import compute_pressure, compute_pressure_cov
+from matter import compute_slope, compute_slope_cov
+from matter import compute_compressibility, compute_compressibility_cov
+from matter import compute_speed_of_sound
+from graphs import setup_rc_params
+from utils import InputData
+from graphs import confidence_ellipse, confidence_ellipse_mean_cov
+from graphs import add_top_order_legend, compute_filled_handles, plot_empirical_saturation
+from matter import kf_derivative_wrt_density
 
+# from our version of this code
+from derivatives_new import ObservableContainer, SymmetryEnergyContainer
 
 # begin the class
 class Chiral:
@@ -76,9 +73,9 @@ class Chiral:
         self.Lambda = Lambda
 
         if high_density is True:
-            filename = 'nuclear-matter-convergence/data/all_matter_data_high_density.csv'
+            filename = '../nuclear-matter-convergence/data/all_matter_data_high_density.csv'
         else:
-            filename = 'nuclear-matter-convergence/data/all_matter_data.csv'
+            filename = '../nuclear-matter-convergence/data/all_matter_data.csv'
 
         # import the data
         data = InputData(filename, Lambda)
@@ -152,8 +149,8 @@ class Chiral:
         self.err_y_d = np.sqrt(self.err_y_n**2 + self.err_y_s**2)
 
         # momenta and std dev setup
-        self.kf0_n = fermi_momentum(0.16, 2)
-        self.kf0_s = fermi_momentum(0.16, 4)
+        self.kf0_n = fermi_momentum(0.164, 2)
+        self.kf0_s = fermi_momentum(0.164, 4)
 
         self.ref_neutron = 16 / self.kf0_n**2
         self.ref_nuclear = 16 / self.kf0_s**2

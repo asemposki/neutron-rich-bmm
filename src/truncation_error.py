@@ -99,7 +99,7 @@ class Truncation:
         
         # mask for values above 40*n0 only (good)
         low_bound = next(i for i, val in enumerate(mu)
-                                  if val > 0.88616447)
+                                  if val > 0.946136639) # value of mean of mu_FG and mu_n at 40*n0
         mu_mask = mu[low_bound:]
 #        mu_mask = mu    # no mask applied
         

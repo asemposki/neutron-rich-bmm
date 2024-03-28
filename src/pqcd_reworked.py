@@ -74,7 +74,7 @@ class PQCD:
     
     def n_convert_mu(self, density):
         
-        n0 = 0.16
+        n0 = 0.164
         
         # take the density and invert to obtain the corresponding mu
         n_q = density*3.0  # n_q [fm^-3]
