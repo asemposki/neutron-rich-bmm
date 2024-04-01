@@ -16,6 +16,10 @@ old_notebooks/
 .DS_Store
 __pycache__/
 model-selection_mini-project-IIa.ipynb
+Pressure_Mixing_cs2.ipynb
+Pressure_Mixing_GP.ipynb
+Gorda_pQCD_gsum.ipynb
+FRG_Inclusion.ipynb
 
 # IDE specifics
 .idea/
