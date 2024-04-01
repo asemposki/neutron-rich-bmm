@@ -1,4 +1,4 @@
-### Chiral EFT EOS class implementing the
+### Chiral EFT class implementing the
 ### code from C. Drischler, J. A. Melendez,
 ### R. J. Furnstahl, and D. R. Phillips in their
 ### github.com/buqeye/nuclear-matter-convergence
@@ -725,6 +725,12 @@ class Chiral:
 
         Returns:
         --------
+        mu_new : numpy.ndarray
+            Array of mu results at new points in density. 
+            
+        f_n_result : numpy.ndarray
+            The results of the root finding wrt the new
+            chemical potential array.
 
         '''
     
@@ -764,8 +770,8 @@ class Chiral:
 
         Returns:
         --------
-        The value of n with respect to the given values of the 
-        chemical potential. 
+            The value of n with respect to the given values of the 
+            chemical potential. 
         '''
 
         return optimize.fsolve(lambda n : mu - mu_func(n), x0 = guess)[0]

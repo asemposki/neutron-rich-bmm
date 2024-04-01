@@ -5,6 +5,9 @@
 # NOTE: we want the N3LO results from this code only, so we are
 # only sending those back; can change if needed
 
+# This model class is not currently used in the paper,
+# but is here for use if one wishes to do so.
+
 import numpy as np
 import sys 
 
@@ -78,6 +81,10 @@ class Chiral_model(BaseModel):
         N3LO : bool
             If True, returns only the N3LO results for mean and std_dev.
             Otherwise will return all results up to and through N3LO.
+            
+        scaled : bool
+            If the data is scaled, then this is True. Else, it is False.
+            Default is True.
             
         extend : bool
             Extends the data to higher truncation values. Default is
