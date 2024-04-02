@@ -10,6 +10,32 @@ from pqcd_reworked import PQCD
 # function for obtaining training data for GP implementation
 def gp_data(data_xeft, data_pqcd, cutoff=40):
     
+    '''
+    Helper function for determining training data 
+    from the Chiral EFT and pQCD full training sets.
+    Used for the BMM when a GP is the method of choice.
+    
+    Parameters:
+    -----------
+    data_xeft : dict
+        The dictionary of densities, means, and variances
+        of the Chiral EFT data.
+    
+    data_pqcd : dict
+        The dictionary of densities, means, and variances 
+        of the pQCD data.
+    
+    cutoff : int
+        The scaled density cutoff we are using for
+        pQCD data.
+    
+    Returns:
+    --------
+    training_set : dict
+        The dictionary of selected training data 
+        concatenated from both EOSs.
+    '''
+    
     # split into training and testing data
     n_xeft = data_xeft["density"]
     n_pqcd = data_pqcd["density"]
@@ -165,8 +191,32 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, integrate='forward', s
     --------
     cs2 : dict
         The dictonary of results for the 
-        speed of sound and the lower and upper
-        bounds of it at one sigma.
+        speed of sound (calculated using 1\mu dP/dn)
+        and the lower and upper bounds of it at 
+        one sigma.
+        
+    edens_full : dict
+        The energy density dictionary of means and
+        variances returned when sampled == True.
+        
+    dens_arr : numpy.ndarray
+        The densities corresponding to the 
+        speed of sound calculation (if sat is True, 
+        this will reflect from saturation up), returned
+        when sampled is False.
+        
+    cs2_log : dict
+        The dict of speed of sound values from using
+        the n * dlog(mu)/dn method. Returned when 
+        sampled is False.
+        
+    edens_int : dict
+        The dict of energy densities, returned when 
+        sampled is False.
+        
+    mu_dict : dict
+        The dict of chemical potential values, returned
+        when sampled is False.
     '''
 
     # check for saturation point integration
@@ -347,6 +397,38 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, integrate='forward', s
 
 def boundary_conditions(dens, pres_dict, index=0):
     
+    '''
+    Helper function to find boundary conditions
+    from the pQCD results. 
+    
+    Parameters:
+    -----------
+    dens : numpy.ndarray
+        The density array as input to find the BCs.
+    
+    pres_dict : dict
+        The dictionary of pressure values 
+        corresponding to the input density array.
+    
+    Returns:
+    --------
+    mu_FG : numpy.ndarray
+        The 1-d array of chemical potentials
+        corresponding to the values of density that
+        were input. 
+        
+    mU_FG : numpy.ndarray
+        The array of shape [:,None] that is
+        used in the gsum truncation error
+        analysis. 
+        
+    edens_dict : dict
+        The energy density values at the chosen
+        density index, used as the BCs for the 
+        speed of sound calculation.
+    
+    '''
+    
     # call pQCD class
     pqcd = PQCD(X=1, Nf=2) # classic implementation here
     
@@ -423,10 +505,22 @@ def boundary_conditions(dens, pres_dict, index=0):
 def pal_eos(kf):
     
     '''
-    Python version of PAL EOS for maintaining causality. 
+    Python version of PAL (Prakash, Ainsworth, Lattimer) EOS. 
     Coupling constants found via the FORTRAN code paleoscc.f90,
     not included in this function. This function is designed
     to be used as a mean function in the GP for chiral EFT.
+    
+    Parameters:
+    -----------
+    kf : numpy.ndarray
+        The Fermi momentum to be used to calculate PAL for
+        the energy per particle.
+        
+    Returns:
+    --------
+    enperpart_kf : numpy.ndarray
+        The energy per particle, in terms of the
+        Fermi momentum.
     '''
     
     # extract coupling constants from cc dict
@@ -480,6 +574,21 @@ def pal_eos(kf):
 
 def pressure_pal_eos(kf):
     
+    '''
+    The PAL EOS pressure calculation.
+    
+    Parameters:
+    -----------
+    kf : numpy.ndarray
+        The Fermi momentum.
+    
+    Returns:
+    --------
+    pressure_kf : numpy.ndarray
+        The pressure in terms of the Fermi
+        momentum.
+    '''
+    
     # calculate n first again (so we don't have to pass it in)
     n = 2.0 * kf**3.0 / (3.0 * np.pi**2.0)
     
@@ -493,6 +602,8 @@ def get_closest_mask(array, values):
     """Returns a mask corresponding to the locations in array that are closest to values.
     
     array and values must be sorted
+    
+    Taken from gsum, originally written by J. A. Melendez
     """
     idxs = np.searchsorted(array, values, side="left")
 
@@ -503,6 +614,34 @@ def get_closest_mask(array, values):
     return np.isin(np.arange(len(array)), idxs)
 
 def get_linear_mask_in_log_space(x, x_min, x_max, log_x_step, base=np.e):
+    
+    '''
+    Mask for getting linear data in the log space. Written by
+    J. A. Melendez.
+    
+    Parameters:
+    -----------
+    x : numpy.ndarray
+        Array of x values.
+        
+    x_min : float
+        Min x value.
+    
+    x_max : float
+        Max x value.
+        
+    log_x_step : float
+        The step size.
+        
+    base : float
+        The base of the log we are using. Default
+        is natural log (np.e). 
+        
+    Returns:
+    --------
+    The linear mask in the logarithmic space.
+    
+    '''
     lin_x = np.arange(
         np.emath.logn(n=base, x=x_min),
         np.emath.logn(n=base, x=x_max),
