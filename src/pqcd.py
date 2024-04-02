@@ -3,7 +3,7 @@
 # Date: 27 February 2023
 # Last updated: 09 June 2023 
 
-#!!! Note that mu = mu_q in this code
+# !!! Note that mu = mu_q in this code
 # so we must convert outside of these functions
 # if desiring to use mu_B. 
 
@@ -82,8 +82,17 @@ class PQCD:
 
         Parameters:
         -----------
+        mu : numpy.ndarray
+            The quark chemical potential. 
+            
         loop : int
             The order at which alpha_s is calculated. Default is 2.
+            
+        Returns:
+        --------
+        alpha_s : numpy.ndarray
+            The values of alpha_s for the input
+            chemical potential.
         '''
 
         lambda_bar = self.X * mu
@@ -264,6 +273,20 @@ class PQCD:
     
     # define a function for the zeroth order in pressure wrt n
     def pressure_n_FG(self, n):
+        
+        '''
+        FG pressure with respect to number density n.
+        
+        Parameters:
+        -----------
+        n : numpy.ndarray
+            The baryon number density. 
+            
+        Returns:
+        --------
+        p_n_FG : numpy.ndarray
+            The FG pressure as a function of density.
+        '''
 
         p_n_FG = (3.0 / 4.0 * np.pi**2.0) * (n * np.pi**2.0 / 3.0)**(4.0/3.0)
 
@@ -288,6 +311,11 @@ class PQCD:
         alpha_s_mu : numpy.linspace, numpy.ndarray
             A possible different chemical potential range
             to send to alpha_s. Default is None.
+            
+        Returns:
+        --------
+        p_n : numpy.ndarray
+            The pressure as a function of density, at NLO.
         '''
         
         if alpha_s_mu is not None:
@@ -302,6 +330,25 @@ class PQCD:
 
     # define the function for the adiabatic speed of sound
     def cs2(self, n, mu):
+        
+        '''
+        Calculaton of the speed of sound. Not used in this
+        paper.
+        
+        Parameters:
+        -----------
+        n : numpy.ndarray
+            Number density array.
+            
+        mu : numpy.ndarray
+            Corresponding chemical 
+            potential array. 
+            
+        Returns:
+        --------
+        cs2 : numpy.ndarray
+            The speed of sound.
+        '''
 
         # mu_FG again
         mu_FG = ((n*np.pi**2.0)/3.0)**(1.0/3.0)
@@ -320,6 +367,25 @@ class PQCD:
     
     # define the pressure at N3LO from Gorda et al. (2023)
     def pressure_n3lo(self, mu, scaled=False):
+        
+        '''
+        A first attempt at coding the results from 
+        Gorda et al. (2023) including N3LO. 
+        
+        Parameters:
+        -----------
+        mu : numpy.ndarray
+            The quark chemical potential. 
+        
+        scaled : bool
+            Whether the data is scaled or not. 
+            Default is False. 
+        
+        Returns:
+        --------
+        p_n3lo : numpy.ndarray
+            The pressure at N3LO. 
+        '''
 
         # define constants and pieces
         lambda_bar = self.X * mu 
@@ -403,7 +469,7 @@ class PQCD:
             masked_array = np.ma.filled(masked_array, fill_value=fill_value)
 
         return masked_array
-    
+
 
 class Kurkela(PQCD):
 
@@ -439,6 +505,9 @@ class Kurkela(PQCD):
         -----------
         mu : numpy.ndarray
             The linspace in chemical potential with which we started.
+            
+        n_mu : numpy.ndarray
+            The corresponding number density.
 
         scaled : bool
             Toggle to return either scaled pressure (wrt free quark gas)
@@ -509,11 +578,11 @@ class Kurkela(PQCD):
             # class variables for p0
             #p0 = {k: v / hbarc for k, v in p0.items()}
             self.p0 = p0    #unscaled, be careful here
-            
+
 #             # re-set mu_array to 100 points we need in density
 #             mu_array["x2n1"][0] = mu_array["x2n1"][0][1:]
 #             mu_array["x2n2"][0] = mu_array["x2n2"][0][1:]
-            
+
             if scaled == True:
                 p_1 = np.asarray(P["x2n1"])/hbarc/np.asarray(p0["x2n1"])#[1:])
                 p_2 = np.asarray(P["x2n2"])/hbarc/np.asarray(p0["x2n2"])#[1:])
@@ -531,6 +600,24 @@ class Kurkela(PQCD):
         
         # speed of sound for the Kurkela EOS using
         # inversion as for the pressure 
+        
+        '''
+        The speed of sound calculation. Not used in 
+        the paper. 
+        
+        Parameters:
+        -----------
+        mu : numpy.ndarray
+            The chemical potential. 
+            
+        n : numpy.ndarray
+            The number density.
+        
+        Returns:
+        --------
+        cs2 : numpy.ndarray
+            The speed of sound. 
+        '''
         import numdifftools as ndt
         
         # terms
@@ -561,6 +648,9 @@ class Kurkela(PQCD):
         kernel : obj
             The kernel needed for the interpolation and truncation GP.
             Can be fed in from the outside to change parameters.
+            
+        test : numpy.ndarray
+            Testing array. 
         
         Returns:
         --------
@@ -683,6 +773,12 @@ class Kurkela(PQCD):
         kernel : obj
             The kernel needed for the interpolation GP. Can be fed in 
             from the outside for specific parameter alterations.
+            
+        center : float
+            Value for the center of the prior. 
+        
+        sd : float
+            The scale of the prior. 
 
         Returns:
         --------
@@ -811,6 +907,15 @@ class Kurkela(PQCD):
         '''
         The NLO coefficient for the pQCD EOS using Kurkela
         formalism. 
+        
+        Parameters:
+        -----------
+        mu : numpy.ndarray
+            The quark chemical potential array.
+        
+        Returns:
+        --------
+        The value of the coefficient. 
         '''
 
         # reshape the mu array for yref
@@ -833,6 +938,15 @@ class Kurkela(PQCD):
         '''
         The N2LO coefficent for the pQCD EOS using Kurkela
         formalism. 
+        
+        Parameters:
+        -----------
+        mu : numpy.ndarray
+            The quark chemical potential. 
+        
+        Returns:
+        --------
+        The value of the coefficient. 
         '''
 
         # reshape the mu array again
@@ -855,6 +969,17 @@ class Kurkela(PQCD):
 
         '''
         The reference for the expansion. 
+        
+        Parameters:
+        -----------
+        mu : numpy.ndarray
+            The quark chemical potential.
+        
+        Returns:
+        ---------
+        yref : numpy.ndarray
+            The values of yref at the given
+            chemical potentials. 
         '''
         
         # scaling
@@ -871,6 +996,15 @@ class Kurkela(PQCD):
         '''
         The expansion parameter, Q, of the pQCD EOS using
         the Kurkela formalism. 
+        
+        Parameters:
+        -----------
+        mu : numpy.ndarray
+            The quark chemical potentials. 
+            
+        Returns:
+        ---------
+        The value of expQ at the chosen potentials. 
         '''
 
         return self.pqcd_root.alpha_s(mu, loop=2)[:,0]
@@ -917,6 +1051,16 @@ class Kurkela(PQCD):
 
         '''The first order in the number density, to be solved
         to find the root.
+        
+        Parameters:
+        ------------
+        mu : numpy.ndarray
+            The quark chemical potentials. 
+            
+        Returns:
+        --------
+        n : numpy.ndarray
+            The number density array. 
         '''
 
         # set up the function
@@ -929,6 +1073,16 @@ class Kurkela(PQCD):
 
         '''The second order in the number density, to be solved
         to find the root.
+        
+        Parameters:
+        ------------
+        mu : numpy.ndarray
+            The quark chemical potentials. 
+            
+        Returns:
+        --------
+        n : numpy.ndarray
+            The number density. 
         '''
 
         # set up the function

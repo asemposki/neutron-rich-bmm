@@ -1,6 +1,6 @@
-### pQCD model class for Taweret
-### Written by : Alexandra Semposki
-### Last edited : 16 January 2024
+# ## pQCD model class for Taweret
+# ## Written by : Alexandra Semposki
+# ## Last edited : 16 January 2024
 
 # imports and paths
 import numpy as np
@@ -8,7 +8,7 @@ from pqcd import Kurkela
 import sys
 
 from Taweret.Taweret.core.base_model import BaseModel
- 
+
 
 # begin model setup
 class PQCD_model(BaseModel):
@@ -25,7 +25,13 @@ class PQCD_model(BaseModel):
         mu : numpy.linspace
             The quark chemical potential needed to generate
             the mean and standard deviation of the pressure
-            in the pQCD EOS model. 
+            in the pQCD EOS model.
+            
+        X : int
+            The renormalization scale parameter.
+        
+        Nf : int
+            The quark flavour. 
 
         Returns:
         --------
@@ -69,6 +75,9 @@ class PQCD_model(BaseModel):
         N2LO : bool
             If True, returns the mean and std_dev of the N2LO results only.
             If otherwise, will return up to and through N2LO.
+            
+        scaled : bool
+            If the data is scaled or not. Default is True.
 
         Returns:
         --------

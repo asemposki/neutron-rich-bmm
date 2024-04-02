@@ -5,7 +5,7 @@
 # Adapted from : gsum tutorial notebooks by J. Melendez,
 #                R. J. Furnstahl, D. R. Phillips
 # Date : 20 March 2024
-###########################################################
+# ##########################################################
 
 # imports
 import numpy as np
@@ -16,6 +16,43 @@ from sklearn.gaussian_process.kernels import RBF, WhiteKernel
 
 # class declaration
 class Truncation:
+    
+    '''
+    The truncation error class that wraps the gsum package.
+    For use on the pQCD EOS results. 
+    
+    Parameters:
+    -----------
+    x : numpy.array
+        Quark chemical potential.
+        
+    x_FG : numpy.2darray
+        FG quark chemical potential.
+        
+    norders : int
+        Number of orders used.
+        
+    orders : list
+        The list of orders ([0 1 2], etc.)
+        
+    yref : function
+        Functional form for yref. 
+        
+    expQ : function
+        Functional form for the expansion parameter.
+        
+    coeffs : numpy.array
+        The coefficient array of arrays. 
+        Must be transposed when sent in to this
+        class.
+    
+    mask : boolean array
+        If using a mask, send the mask in here.
+    
+    Returns:
+    --------
+    None.
+    '''
 
     def __init__(self, x, x_FG, norders, orders, yref, expQ, coeffs, mask=None):
         
@@ -125,7 +162,18 @@ class Truncation:
 
         Parameters:
         -----------
-        None.
+        ls : float
+            The lengthscale guess for the kernel.
+        
+        sd : float
+            The scale for the prior.
+            
+        center : float
+            The center value for the prior.
+            
+        nugget : int, float
+            The value of the nugget to send to the 
+            Cholesky decomposition.
 
         Returns:
         --------
@@ -152,12 +200,11 @@ class Truncation:
 
         Parameters:
         -----------
-        x : numpy.ndarray
-            The input linspace needed.
-            
-        kernel : obj
-            The kernel needed for the interpolation GP. Can be fed in 
-            from the outside for specific parameter alterations.
+        center : float
+            The center value for the prior.
+        
+        sd : float
+            The scale for the prior.
 
         Returns:
         --------
@@ -206,12 +253,26 @@ class Truncation:
 
         Parameters:
         -----------
-        x : numpy.ndarray
-            The linspace of input variable needed.
-            
-        kernel : obj
-            The kernel needed for the interpolation and truncation GP.
-            Can be fed in from the outside to change parameters.
+        data : numpy.ndarray
+            The data given in an array of arrays for 
+            each order-by-order result.
+        
+        expQ : function
+            The functional form of the expansion parameter
+            for gsum to use.
+        
+        yref : function
+            The functional form of yref for gsum to use.
+         
+        sd : float
+            The scale for the prior.
+        
+        nugget : int, float
+            The nugget for the Cholesky decomposition.
+        
+        excluded : list
+            The orders we wish to exclude from training
+            on in the coefficient arrays. Default is None.
         
         Returns:
         --------
@@ -249,7 +310,8 @@ class Truncation:
         cov_trunc = np.zeros([len(self.X), len(self.X), self.n_orders])
         for i, n in enumerate(self.orders):
             # Only get the uncertainty due to truncation (kind='trunc')
-            _, std_trunc[:,n] = self.trunc_gp.predict(self.X, order=n, return_std=True, kind='trunc', pred_noise=True)
+            _, std_trunc[:,n] = self.trunc_gp.predict(self.X, order=n, return_std=True, \
+                                                      kind='trunc', pred_noise=True)
             _, cov_trunc[:,:,n] = self.trunc_gp.predict(self.X, order=n, return_std=False, \
                                                         return_cov=True, kind='trunc', pred_noise=True)
             
@@ -264,7 +326,8 @@ class Truncation:
     
     
     # masking for diagnostics ONLY (taken from Jordan Melendez's gsum code directly)
-    def regular_train_test_split(self, x, dx_train, dx_test, offset_train=0, offset_test=0, xmin=None, xmax=None):
+    def regular_train_test_split(self, x, dx_train, dx_test, offset_train=0, offset_test=0, \
+                                 xmin=None, xmax=None):
         train_mask = np.array([(i - offset_train) % dx_train == 0 for i in range(len(x))])
         test_mask = np.array([(i - offset_test) % dx_test == 0 for i in range(len(x))])
         if xmin is None:
@@ -277,6 +340,27 @@ class Truncation:
     
     
     def diagnostics(self, dx_train=30, dx_test=15):
+        
+        '''
+        The diagnostic function to check the validity of 
+        the truncation error obtained via gsum. Uses
+        gsum to perform Mahalanobis distance and pivoted
+        Cholesky calculations. Plots the results.
+        
+        Parameters:
+        -----------
+        dx_train : int
+            The number to use as a step size for the
+            training data.
+        
+        dx_test : int
+            The number to use as a step size for the
+            testing data.
+        
+        Returns:
+        --------
+        None
+        '''
         
         # set the plot labels
         MD_label = r'$\mathrm{D}_{\mathrm{MD}}^2$'
@@ -301,7 +385,8 @@ class Truncation:
         text_bbox = dict(boxstyle='round', fc=(1, 1, 1, 0.6), ec='k', lw=0.8)
         
         # call the masking function for diagnostics
-        x_train_mask, x_valid_mask = self.regular_train_test_split(self.x, dx_train, dx_test, offset_train=0, \
+        x_train_mask, x_valid_mask = self.regular_train_test_split(self.x, dx_train, dx_test, \
+                                                                   offset_train=0, \
                                                                    offset_test=0, xmin=0.88616447)
         
         # print the values for checking (use only ones after 40 n0 again)
@@ -338,7 +423,8 @@ class Truncation:
         print('Condition number:', np.linalg.cond(cov_underlying))
         
         # coeffs coming from initial set up
-        gdgn = gm.GraphicalDiagnostic(self.coeffs[x_valid_mask], mean_underlying, cov_underlying, colors=colors,
+        gdgn = gm.GraphicalDiagnostic(self.coeffs[x_valid_mask], mean_underlying, cov_underlying, \
+                                      colors=colors,
                                       gray='gray', black='k')
 
         def offset_xlabel(ax):
