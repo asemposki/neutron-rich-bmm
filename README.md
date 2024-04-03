@@ -21,7 +21,18 @@ This repository is built to work off of the nuclear-matter-convergence repositor
 9. Now that this is all done, you can test the structure by going into the `notebooks` folder and saying `jupyter notebook` in terminal, and this should load up the notebooks to be run. You should be all set!
 
 ## Navigation
-[Fill this in later.]
+
+### Notebooks 
+This folder contains all of the notebooks that generate our results in our paper. 
+
+### data
+All of our data is contained here.
+
+### src
+The source folder has all of the code written for this paper, including modified versions of open-source BUQEYE code from previous projects from the authors.
+
+### Mathematica codes
+Here you will find the Mathematica notebook that calculates the speeds of sound in Appendix B of the paper, and some of Appendix A as well.
 
 ## Contacts
 
