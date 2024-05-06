@@ -388,6 +388,7 @@ class PQCD:
         yref = yref[:,0]
         return yref
     
+    
     def expQ(self, x): 
         
         '''
@@ -407,6 +408,8 @@ class PQCD:
         '''
         return (self.Nf * self.alpha_s(x, loop=2)/np.pi)[:,0]
         #return self.alpha_s(x, loop=2)[:,0]  # alpha_s only
+        
+    
     
     def c_0(self, x):
         
@@ -425,6 +428,7 @@ class PQCD:
         '''
         return np.ones(len(x))
     
+    
     def c_1(self, x):
         
         '''
@@ -442,6 +446,8 @@ class PQCD:
         '''
         return (self.a11*np.ones(len(x))/self.Nf)
         #return (self.a11/np.pi)*np.ones(len(x))  # alpha_s only
+        
+        
     
     def c_2(self, x):
         
@@ -464,6 +470,7 @@ class PQCD:
         three = self.a23
         return (one + two + three)/self.Nf
         #return (one + two + three) * self.Nf/(np.pi**2)  # alpha_s only
+  
     
     def mu_1(self, mu_FG): 
         
@@ -486,6 +493,7 @@ class PQCD:
         #numerator = self.c_1(mu_FG) * self.alpha_s(mu_FG, loop=2) * self.n_FG_mu(mu_FG) #checked 
         denominator = self.c_0(mu_FG) * (self.Nf * 3.0 * mu_FG**2.0 / (np.pi**2.0)) #checked
         return -numerator/denominator
+    
     
     def mu_2(self, mu_FG): 
         
@@ -567,6 +575,7 @@ class PQCD:
         }
         
         return pressure_n
+  
 
     @staticmethod
     def mask_array(array, neg=False, fill_value=None):
@@ -621,3 +630,85 @@ class PQCD:
             masked_array = np.ma.filled(masked_array, fill_value=fill_value)
 
         return masked_array
+    
+    
+# set up a derivative class from PQCD
+class PQCDDens(PQCD):
+    
+    def __init__(self, nb, X=1, Nf=2):
+        
+        super().__init__(X, Nf)      
+        return None
+    
+    
+    # number density version
+    def yref_dens(self, nb):
+        
+        # calculate mu_FG in terms of nb
+        mu_FG = (3.0 * np.pi**2.0 * 3.0 * nb * (197.33/1000.)**3.0 / (self.Nc * self.Nf))**(1.0/3.0)
+    #    mU_FG = mu_FG[:,None]
+       
+        # calculate yref
+        yref = ((self.Nf * self.Nc * mu_FG**4.0) / (12.0 * np.pi**2.0))  # FG pressure for any flavour, colour
+        yref = yref[:,0]
+        return yref
+    
+    
+    # adding as a function of number density
+    def expQ_dens(self, nb):
+        
+        # calculate mu_FG in terms of nb
+        mu_FG = (3.0 * np.pi**2.0 * 3.0 * nb * (197.33/1000.)**3.0 / (self.Nc * self.Nf))**(1.0/3.0)
+      #  mU_FG = mu_FG[:,None]
+        
+        return (self.Nf * self.alpha_s(mu_FG, loop=2)/np.pi)[:,0]
+
+    
+    # directly function of number density
+    def c_0_n(self, nb):
+        return np.ones(len(nb))
+    
+    
+    # purely function of number density
+    def c_1_n(self, nb):
+        return (2.0/(3.0 * self.Nf))*np.ones(len(nb))
+         
+            
+    def c_2_n(self, nb):
+        
+        # calculate mu_FG in terms of nb
+        mu_FG = (3.0 * np.pi**2.0 * 3.0 * nb * (197.33/1000.)**3.0 / (self.Nc * self.Nf))**(1.0/3.0)
+        
+        one = 8.0 / (9.0 * self.Nf**2.0)
+        two = self.c_2(mu_FG) / 3.0
+        three = self.beta0 / (3.0 * self.Nf**2.0)
+        
+        return (one - two - three)
+    
+    
+    # writing it all in terms of the full paper expression instead of perturbative mu
+    # this should equal the pressure wrt mu_FG for the same calculation in the mean
+    # curve; check this to see if we're correct!
+    def pressure_KLW_check(self, nb):
+        
+        nB = nb[:,None]
+        
+        pressure_0 = self.yref_dens(nB)
+        
+        pressure_1 = (2.0/(3.0*self.Nf)) * self.expQ_dens(nB) * self.yref_dens(nB)
+        
+        pressure_2 = self.yref_dens(nB) * self.expQ_dens(nB)**2.0 * self.c_2_n(nb)
+        
+        # organise so each order contains the last
+        pressure_LO = pressure_0
+        pressure_NLO = pressure_0 + pressure_1
+        pressure_N2LO = pressure_0 + pressure_1 + pressure_2
+        
+        # stash in dict
+        pressure_n_check = {
+            "LO": pressure_LO,
+            "NLO": pressure_NLO,
+            "N2LO": pressure_N2LO
+        }
+        
+        return pressure_n_check
