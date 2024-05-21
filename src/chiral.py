@@ -287,7 +287,7 @@ class Chiral:
         return self.obs_neutron, self.obs_nuclear, self.obs_sym_energy
     
 
-    def energy_per_particle(self, add_rest_mass=False, orders='all'):
+    def energy_per_particle(self, add_rest_mass=False, case='SNM', orders='all'):
 
         '''
         A function that ouputs the energy per particle with truncation 
@@ -314,32 +314,60 @@ class Chiral:
             E/A (inclusive of the rest mass) and the standard deviation 
             of E/A. 
         '''
-
-        # adding the rest mass in (average p,n)
-        self.rest_mass = 938.91875434       # MeV
-
-        # energy per particle
-        if orders == 'all':
-            self.energies_s = np.array([self.obs_nuclear.get_pred(order=n, deriv=0) \
-                                for n in self.orders]).T
-            self.energy_s_stds = np.array([self.obs_nuclear.get_std(order=n, deriv=0, \
-                                    include_trunc=True) for n in self.orders]).T
-        elif orders == 'N3LO':
-            self.energies_s = np.array([self.obs_nuclear.get_pred(order=4,\
-                                         deriv=0)]).T
-            self.energy_s_stds = np.array([self.obs_nuclear.get_std(order=4, \
-                                         deriv=0, include_trunc=True)]).T
         
-        # if rest_mass is True, add it to E/A
-        if add_rest_mass is True:
-            self.energies_s_mn = self.energies_s + self.rest_mass
-            return self.energies_s_mn, self.energy_s_stds
-        
-        else:
-            return self.energies_s, self.energy_s_stds
+        if case == 'SNM':
+
+            # adding the rest mass in (average p,n)
+            self.rest_mass = 938.91875434       # MeV
+
+            # energy per particle
+            if orders == 'all':
+                self.energies_s = np.array([self.obs_nuclear.get_pred(order=n, deriv=0) \
+                                    for n in self.orders]).T
+                self.energy_s_stds = np.array([self.obs_nuclear.get_std(order=n, deriv=0, \
+                                        include_trunc=True) for n in self.orders]).T
+            elif orders == 'N3LO':
+                self.energies_s = np.array([self.obs_nuclear.get_pred(order=4,\
+                                             deriv=0)]).T
+                self.energy_s_stds = np.array([self.obs_nuclear.get_std(order=4, \
+                                             deriv=0, include_trunc=True)]).T
+
+            # if rest_mass is True, add it to E/A
+            if add_rest_mass is True:
+                self.energies_s_mn = self.energies_s + self.rest_mass
+                return self.energies_s_mn, self.energy_s_stds
+
+            else:
+                return self.energies_s, self.energy_s_stds
+            
+        elif case == 'PNM':
+            
+            # adding the rest mass in (n only here)
+            self.rest_mass = 939.6       # MeV
+
+            # energy per particle
+            if orders == 'all':
+                self.energies_n = np.array([self.obs_neutron.get_pred(order=n, deriv=0) \
+                                    for n in self.orders]).T
+                self.energy_n_stds = np.array([self.obs_neutron.get_std(order=n, deriv=0, \
+                                        include_trunc=True) for n in self.orders]).T
+            elif orders == 'N3LO':
+                self.energies_n = np.array([self.obs_neutron.get_pred(order=4,\
+                                             deriv=0)]).T
+                self.energy_n_stds = np.array([self.obs_neutron.get_std(order=4, \
+                                             deriv=0, include_trunc=True)]).T
+
+            # if rest_mass is True, add it to E/A
+            if add_rest_mass is True:
+                self.energies_n_mn = self.energies_n + self.rest_mass
+                return self.energies_n_mn, self.energy_n_stds
+
+            else:
+                return self.energies_n, self.energy_n_stds
+            
 
 
-    def pressure(self, orders='all'):
+    def pressure(self, orders='all', matter='SNM'):
 
         '''
         The pressure of the chiral EOS. 
@@ -359,72 +387,114 @@ class Chiral:
             The pressure and standard deviation of the pressure. 
         '''
 
-        # set up the pressure and std dev
-        pressures_s = []
-        pressure_s_stds = []
-        pressure_s_cov_n = {}
-        pressure_s_cov_arr = np.zeros([len(self.obs_nuclear.kf_interp), len(self.obs_nuclear.kf_interp), len(self.orders)])
+        if matter == 'SNM':
+            # set up the pressure and std dev
+            pressures_s = []
+            pressure_s_stds = []
+            pressure_s_cov_n = {}
+            pressure_s_cov_arr = np.zeros([len(self.obs_nuclear.kf_interp), len(self.obs_nuclear.kf_interp), len(self.orders)])
 
-        if orders == 'all':
+            if orders == 'all':
 
-            for i, n in enumerate(self.orders):
-                pressure_s = compute_pressure(
+                for i, n in enumerate(self.orders):
+                    pressure_s = compute_pressure(
+                        self.obs_nuclear.density_interp,
+                        self.obs_nuclear.kf_interp,
+                        dE=self.obs_nuclear.get_pred(order=n, deriv=1)
+                    )
+                    pressure_s_cov = compute_pressure_cov(
+                        self.obs_nuclear.density_interp,
+                        self.obs_nuclear.kf_interp,
+                        dE_cov=self.obs_nuclear.get_cov(order=n, deriv1=1, deriv2=1)
+                    )
+
+                    pressure_s_cov_n[n] = pressure_s_cov
+
+                    pressure_s_std = np.sqrt(np.diag(pressure_s_cov))
+
+                    pressures_s.append(pressure_s)
+                    pressure_s_stds.append(pressure_s_std)
+
+                pressures_s = np.array(pressures_s).T
+                pressure_s_stds = np.array(pressure_s_stds).T
+
+                for i,value in zip(range(len(self.orders)), pressure_s_cov_n.values()):
+                    pressure_s_cov_arr[:,:,i] = np.array(value).T
+
+                # transform into class variables
+                self.pressures_s = pressures_s 
+                self.pressure_s_stds = pressure_s_stds 
+                self.pressure_s_cov = pressure_s_cov_arr
+
+                return self.pressures_s, self.pressure_s_stds, self.pressure_s_cov 
+
+            elif orders == 'N3LO':
+
+                pressures_s = compute_pressure(
                     self.obs_nuclear.density_interp,
                     self.obs_nuclear.kf_interp,
-                    dE=self.obs_nuclear.get_pred(order=n, deriv=1)
+                    dE=self.obs_nuclear.get_pred(order=4, deriv=1)
                 )
+
                 pressure_s_cov = compute_pressure_cov(
                     self.obs_nuclear.density_interp,
                     self.obs_nuclear.kf_interp,
-                    dE_cov=self.obs_nuclear.get_cov(order=n, deriv1=1, deriv2=1)
+                    dE_cov=self.obs_nuclear.get_cov(order=4, deriv1=1, deriv2=1)
                 )
-                
-                pressure_s_cov_n[n] = pressure_s_cov
 
-                pressure_s_std = np.sqrt(np.diag(pressure_s_cov))
-                
-                pressures_s.append(pressure_s)
-                pressure_s_stds.append(pressure_s_std)
-                
-            pressures_s = np.array(pressures_s).T
-            pressure_s_stds = np.array(pressure_s_stds).T
-            
-            for i,value in zip(range(len(self.orders)), pressure_s_cov_n.values()):
-                pressure_s_cov_arr[:,:,i] = np.array(value).T
+                pressure_s_stds = np.sqrt(np.diag(pressure_s_cov))
 
-            # transform into class variables
-            self.pressures_s = pressures_s 
-            self.pressure_s_stds = pressure_s_stds 
-            self.pressure_s_cov = pressure_s_cov_arr
-    
-            return self.pressures_s, self.pressure_s_stds, self.pressure_s_cov 
+                pressures_s = np.array(pressures_s).T
+                pressure_s_stds = np.array(pressure_s_stds).T
+                pressure_s_cov = np.array(pressure_s_cov).T
 
-        elif orders == 'N3LO':
+                # transform into class variables
+                self.pressures_s = pressures_s 
+                self.pressure_s_stds = pressure_s_stds 
+                self.pressure_s_cov = pressure_s_cov
 
-            pressures_s = compute_pressure(
-                self.obs_nuclear.density_interp,
-                self.obs_nuclear.kf_interp,
-                dE=self.obs_nuclear.get_pred(order=4, deriv=1)
-            )
+                return self.pressures_s, self.pressure_s_stds, self.pressure_s_cov 
 
-            pressure_s_cov = compute_pressure_cov(
-                self.obs_nuclear.density_interp,
-                self.obs_nuclear.kf_interp,
-                dE_cov=self.obs_nuclear.get_cov(order=4, deriv1=1, deriv2=1)
-            )
+        if matter == 'PNM':
+            # set up the pressure and std dev
+            pressures_n = []
+            pressure_n_stds = []
+            pressure_n_cov_n = {}
+            pressure_n_cov_arr = np.zeros([len(self.obs_neutron.kf_interp), len(self.obs_neutron.kf_interp), len(self.orders)])
 
-            pressure_s_stds = np.sqrt(np.diag(pressure_s_cov))
-    
-            pressures_s = np.array(pressures_s).T
-            pressure_s_stds = np.array(pressure_s_stds).T
-            pressure_s_cov = np.array(pressure_s_cov).T
+            if orders == 'all':
 
-            # transform into class variables
-            self.pressures_s = pressures_s 
-            self.pressure_s_stds = pressure_s_stds 
-            self.pressure_s_cov = pressure_s_cov
-    
-            return self.pressures_s, self.pressure_s_stds, self.pressure_s_cov 
+                for i, n in enumerate(self.orders):
+                    pressure_n = compute_pressure(
+                        self.obs_neutron.density_interp,
+                        self.obs_neutron.kf_interp,
+                        dE=self.obs_neutron.get_pred(order=n, deriv=1)
+                    )
+                    pressure_n_cov = compute_pressure_cov(
+                        self.obs_neutron.density_interp,
+                        self.obs_neutron.kf_interp,
+                        dE_cov=self.obs_neutron.get_cov(order=n, deriv1=1, deriv2=1)
+                    )
+
+                    pressure_n_cov_n[n] = pressure_n_cov
+
+                    pressure_n_std = np.sqrt(np.diag(pressure_n_cov))
+
+                    pressures_n.append(pressure_n)
+                    pressure_n_stds.append(pressure_n_std)
+
+                pressures_n = np.array(pressures_n).T
+                pressure_n_stds = np.array(pressure_n_stds).T
+
+                for i,value in zip(range(len(self.orders)), pressure_n_cov_n.values()):
+                    pressure_n_cov_arr[:,:,i] = np.array(value).T
+
+                # transform into class variables
+                self.pressures_n = pressures_n 
+                self.pressure_n_stds = pressure_n_stds 
+                self.pressure_n_cov = pressure_n_cov_arr
+
+                return self.pressures_n, self.pressure_n_stds, self.pressure_n_cov 
     
 
     def energy_dens(self, add_rest_mass=False, orders='all'):

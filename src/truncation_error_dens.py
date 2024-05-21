@@ -182,7 +182,7 @@ class TruncationDens:
         return kernel
     
 
-    def gp_interpolation(self, center=0.0, sd=1.0):
+    def gp_interpolation(self, center=0.0, dof=3.0, sd=1.0):
 
         '''
         The function responsible for fitting the coefficients with a GP
@@ -218,7 +218,7 @@ class TruncationDens:
         # Set up gp objects with fixed mean and standard deviation 
         kernel = self.gp_kernel(ls=3.0, sd=sd, center=0)  
         self.gp_interp = gm.ConjugateGaussianProcess(
-            kernel=kernel, center=center, disp=0, df=3.0, scale=sd, nugget=0) 
+            kernel=kernel, center=center, disp=0, df=dof, scale=sd, nugget=0) 
         
         # fit and predict using the interpolated GP (on number density now)
         if self.orders_mask is not None:
@@ -235,7 +235,7 @@ class TruncationDens:
         return pred, std, underlying_std
     
 
-    def uncertainties(self, data=None, expQ=None, yref=None, sd=0.5, nugget=1e-10, excluded=None):
+    def uncertainties(self, data=None, expQ=None, yref=None, dof=3.0, sd=0.5, nugget=1e-10, excluded=None):
 
         '''
         Calculation of the truncation error bands for the pQCD EOS, using 
@@ -293,7 +293,7 @@ class TruncationDens:
         # set up the truncation GP
         self.kernel = self.gp_kernel(ls=3.0, sd=sd, center=0, nugget=self.nugget) 
         self.trunc_gp = gm.TruncationGP(kernel=self.kernel, ref=yref, \
-                            ratio=expQ, disp=0, df=3.0, scale=sd, excluded=excluded, nugget=self.nugget)
+                            ratio=expQ, disp=0, df=dof, scale=sd, excluded=excluded, nugget=self.nugget)
         
         self.trunc_gp.fit(self.nB[self.mask], data[self.mask], orders=self.orders)
         

@@ -8,7 +8,7 @@ import numdifftools as ndt
 from pqcd_reworked import PQCD
 
 # function for obtaining training data for GP implementation
-def gp_data(data_xeft, data_pqcd, cutoff=40):
+def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True):
     
     '''
     Helper function for determining training data 
@@ -28,6 +28,10 @@ def gp_data(data_xeft, data_pqcd, cutoff=40):
     cutoff : int
         The scaled density cutoff we are using for
         pQCD data.
+        
+    all_orders : bool
+        Toggle if data is more than one-dimensional.
+        Default is True.
     
     Returns:
     --------
@@ -39,9 +43,16 @@ def gp_data(data_xeft, data_pqcd, cutoff=40):
     # split into training and testing data
     n_xeft = data_xeft["density"]
     n_pqcd = data_pqcd["density"]
-    p_mean_xeft = data_xeft["mean"][:, -1]
-    p_stdv_xeft = data_xeft["std_dev"][:, -1]
-    p_cov_xeft = data_xeft["cov"][..., -1]
+    
+    # toggle
+    if all_orders is True:
+        p_mean_xeft = data_xeft["mean"][:, -1]
+        p_stdv_xeft = data_xeft["std_dev"][:, -1]
+        p_cov_xeft = data_xeft["cov"][..., -1]
+    else:
+        p_mean_xeft = data_xeft["mean"]
+        p_stdv_xeft = data_xeft["std_dev"]
+        p_cov_xeft = data_xeft["cov"]
 
     p_mean_pqcd = data_pqcd["mean"][:, -1]
     p_stdv_pqcd = data_pqcd["std_dev"][:, -1]
@@ -99,19 +110,17 @@ def gp_data(data_xeft, data_pqcd, cutoff=40):
             chiral_tr[key] = chiral_train[key][:chiral_cutoff, :chiral_cutoff]
 
     # chiral point selection
-    log_space_chiral = get_linear_mask_in_log_space(chiral_train['dens'], chiral_train['dens'][40],\
-                                                    chiral_train['dens'][chiral_cutoff], 0.25, base=np.e)
+   # log_space_chiral = get_linear_mask_in_log_space(chiral_train['dens'], chiral_train['dens'][40],\
+                                               #     chiral_train['dens'][chiral_cutoff], 0.25, base=np.e)
     chiral_tr_final = {}
     for key,i in chiral_tr.items():
         if chiral_tr[key].ndim == 1:
-            chiral_tr_final[key] = chiral_tr[key][40::30]#[log_space_chiral[:-1]]
+            chiral_tr_final[key] = chiral_tr[key][10::70] #[log_space_chiral[:-1]]  # 40,::30
         elif chiral_tr[key].ndim == 2:
-            chiral_tr_final[key] = chiral_tr[key][40::30, 40::30]#[log_space_chiral[:-1]][:, log_space_chiral[:-1]]
+            chiral_tr_final[key] = chiral_tr[key][10::70, 10::70] #[log_space_chiral[:-1]][:, log_space_chiral[:-1]]  # 40,::30
 
     print(chiral_tr_final['dens'].shape, chiral_tr_final['mean'].shape, \
           chiral_tr_final['std'].shape, chiral_tr_final['cov'].shape)
-    print(chiral_tr_final['dens']/0.164)
-    print(chiral_tr_final['dens'])
 
     # pqcd point selection
     if pqcd_train['dens'][-1] < pqcd_dens_cutoff:
@@ -140,7 +149,6 @@ def gp_data(data_xeft, data_pqcd, cutoff=40):
           chiral_tr_final['std'].shape, chiral_tr_final['cov'].shape)
     print(pqcd_tr_final['dens'].shape, pqcd_tr_final['mean'].shape, \
           pqcd_tr_final['std'].shape, pqcd_tr_final['cov'].shape)
-    print(pqcd_tr_final['dens']/0.164)
 
     # now concatenate into block diagonal matrix
     training_set = {
@@ -221,7 +229,7 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, integrate='forward', s
 
     # check for saturation point integration
     if sat is True:
-        dens_arr = np.linspace(0.164, 16.4, 1000)
+        dens_arr = np.linspace(0.164, 16.4, 1200)
     else:
         dens_arr = dens
         
@@ -524,11 +532,11 @@ def pal_eos(kf):
     '''
     
     # extract coupling constants from cc dict
-    K0 = 260. #cc['K0']
-    A = -47.83618 #cc['A']
-    B = 31.01158 #cc['B']
-    Bp = 0. #cc['Bp']
-    Sig = 1.500259  #cc['Sig']
+    K0 = 260. #cc['K0']       # MeV
+    A = -47.83618 #cc['A']    # MeV
+    B = 31.01158 #cc['B']     # MeV
+    Bp = 0. #cc['Bp']       
+    Sig = 1.500259  #cc['Sig'] 
     
     # if we want Bp != 0.0
 #     A = -22.97032
@@ -537,38 +545,38 @@ def pal_eos(kf):
 #     Sig = 1.9999723
     
     # other constants
-    hc = 197.33
-    n0 = 0.164
-    mn = 939.
-    kf0 = (1.5*np.pi**2.*0.16)**(1./3.)
-    ef0 = (hc*kf0)**2./2./939.
-    sufac = (2.**(2./3.)-1.)*0.6*ef0
-    s0 = 30.
+    hc = 197.33     # MeV fm
+    n0 = 0.164      # fm^-3
+    mn = 939.       # MeV
+    kf0 = (1.5*np.pi**2.*0.164)**(1./3.)    # fm^1
+    ef0 = (hc*kf0)**2./2./939.              # MeV
+    sufac = (2.**(2./3.)-1.)*0.6*ef0        # MeV
+    s0 = 30.                                # MeV
     
     # other coupling constants
-    C1 = -83.841
-    C2 = 22.999
-    Lambda1 = 1.5*kf0
-    Lambda2 = 3.*kf0
+    C1 = -83.841                            # MeV
+    C2 = 22.999                             # MeV
+    Lambda1 = 1.5*kf0                       # fm^-1
+    Lambda2 = 3.*kf0                        # fm^-1
     
     # conversion from kf to n to solve that problem
-    n = 2.0 * kf**3.0 / (3.0 * np.pi**2.0)
+    n = 2.0 * kf**3.0 / (3.0 * np.pi**2.0)          # fm^-3
     
-    # write it as E/A first and then move to pressure for output
-    one = mn * n0 * (n/n0) + (3.0/5.0)*ef0*n0*(n/n0)**(5.0/3.0)
-    two = 0.5*A*n0*(n/n0)**2.0 + (B*n0*(n/n0)**(Sig+1.0))/(1.0 + Bp * (n/n0)**(Sig - 1.0))
-    sum_1 = C1 * (Lambda1/kf0)**3.0 * ((Lambda1/kf) - np.arctan(Lambda1/kf))
-    sum_2 = C2 * (Lambda2/kf0)**3.0 * ((Lambda2/kf) - np.arctan(Lambda2/kf))
-    three = 3.0 * n0 * (n/n0) * (sum_1 + sum_2)
+    # write it as E/A first
+    one = mn * n0 * (n/n0) + (3.0/5.0)*ef0*n0*(n/n0)**(5.0/3.0)       # MeV/fm^3
+    two = 0.5*A*n0*(n/n0)**2.0 + (B*n0*(n/n0)**(Sig+1.0))/(1.0 + Bp * (n/n0)**(Sig - 1.0))   # MeV/fm^3
+    sum_1 = C1 * (Lambda1/kf0)**3.0 * ((Lambda1/kf) - np.arctan(Lambda1/kf))  # MeV
+    sum_2 = C2 * (Lambda2/kf0)**3.0 * ((Lambda2/kf) - np.arctan(Lambda2/kf))  # MeV 
+    three = 3.0 * n0 * (n/n0) * (sum_1 + sum_2)                               # MeV/fm^3
     
-    eps_kf = one + two + three
+    eps_kf = one + two + three     # MeV/fm^3
     
     # convert to E/A from eps
-    enperpart_kf = eps_kf / n
+    enperpart_kf = eps_kf * n    # MeV
     
     # now calculate pressure using differentiation
-    derivEA = np.gradient(enperpart_kf, kf)
-    pressure_kf = (n * kf / 3.0) * np.asarray(derivEA)
+ #   derivEA = np.gradient(enperpart_kf, kf)
+ #   pressure_kf = (n * kf / 3.0) * np.asarray(derivEA)
     
     return enperpart_kf
 

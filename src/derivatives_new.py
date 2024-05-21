@@ -9,7 +9,7 @@ from scipy import stats
 import sys 
 sys.path.append('../nuclear-matter-convergence/nuclear_matter')
 from matter import fermi_momentum
-from eos_utils import pal_eos, pressure_pal_eos
+from eos_utils import pal_eos
 
 from gptools import Kernel, ConstantMeanFunction, SquaredExponentialKernel, GaussianProcess
 
@@ -467,14 +467,14 @@ class ObservableContainer:
                 for n in range(len(derivs)):
                     if n == 0:
                         #diff_mean[i,n] = self.c1*x[i]**self.a + self.c2*x[i]**self.b + self.c3*x[i]**self.c
-                        diff_mean[i,n] = pressure_pal_eos(x[i])
+                        diff_mean[i,n] = pal_eos(x[i])
                     elif n == 1:
                         #diff_mean[i,n] = self.c1*self.a * x[i]**(self.a-1) + self.c2*self.b*x[i]**(self.b-1) \
                         #+ self.c3*self.c * x[i]**(self.c-1)
-                        pal_diff = ndt.Derivative(pressure_pal_eos, step=1e-4, method='central') 
+                        pal_diff = ndt.Derivative(pal_eos, step=1e-4, method='central') 
                         diff_mean[i,n] = pal_diff(x[i])
                     elif n == 2:
-                        pal_diff = ndt.Derivative(pressure_pal_eos, step=1e-4, method='central')
+                        pal_diff = ndt.Derivative(pal_eos, step=1e-4, method='central')
                         pal_diff_2 = ndt.Derivative(pal_diff, step=1e-4, method='central')
                         diff_mean[i,n] = pal_diff_2(x[i])                        
                         #diff_mean[i,n] = self.c1*self.a * (self.a-1) * x[i]**(self.a-2) \
@@ -526,7 +526,7 @@ class ObservableContainer:
             gp_interp = GaussianProcess(kern_interp, mu=mu_n)
             if extend is True:
                 #y_n_shifted = y_n - mean_n(x=self.kf, c1=1., c2=1., c3=1., a=2.,b=3., c=6.)
-                y_n_shifted = y_n - pressure_pal_eos(self.kf) #mean_n(x=self.kf, c1=1., c2=1., c3=1., a=2.,b=3., c=6.)  
+                y_n_shifted = y_n - pal_eos(self.kf) #mean_n(x=self.kf, c1=1., c2=1., c3=1., a=2.,b=3., c=6.)  
                 # current values :: c1=10, c2=1, a=4, b=3
             
                 gp_interp.add_data(Kf, y_n_shifted, err_y=err_y)  ### subtract the mean from the data here!
