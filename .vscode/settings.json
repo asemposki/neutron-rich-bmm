@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./nuclear-matter-convergence/nuclear_matter"
+    ]
+}

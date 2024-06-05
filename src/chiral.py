@@ -36,7 +36,8 @@ from graphs import add_top_order_legend, compute_filled_handles, plot_empirical_
 from matter import kf_derivative_wrt_density
 
 # from our version of this code
-from derivatives_new import ObservableContainer, SymmetryEnergyContainer
+# from derivatives_new import ObservableContainer, SymmetryEnergyContainer
+from derivatives import ObservableContainer, SymmetryEnergyContainer
 
 # begin the class
 class Chiral:
@@ -173,7 +174,7 @@ class Chiral:
             self.ls_s_sym = None
         
         elif self.Lambda == 500:
-            self.rho = None
+            self.rho = None   # letting it calculate rho
             self.ls_n_sym = self.ls_neutron
             self.ls_s_sym = self.ls_nuclear
 
@@ -240,7 +241,7 @@ class Chiral:
             include_3bf=False,
             derivs=[0, 1, 2],
             verbose=verbose,
-            extend=extend,
+         #   extend=extend,
         )
 
         print('Setting up nuclear matter...', flush=True)
@@ -259,7 +260,7 @@ class Chiral:
             include_3bf=False,
             derivs=[0, 1, 2],
             verbose=verbose,
-            extend=extend,
+          #  extend=extend,
         )
 
         print('Setting up symmetry energy...', flush=True)

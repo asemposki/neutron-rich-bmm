@@ -8,7 +8,7 @@ import numdifftools as ndt
 from pqcd_reworked import PQCD
 
 # function for obtaining training data for GP implementation
-def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True):
+def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
     
     '''
     Helper function for determining training data 
@@ -112,12 +112,20 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True):
     # chiral point selection
    # log_space_chiral = get_linear_mask_in_log_space(chiral_train['dens'], chiral_train['dens'][40],\
                                                #     chiral_train['dens'][chiral_cutoff], 0.25, base=np.e)
-    chiral_tr_final = {}
-    for key,i in chiral_tr.items():
-        if chiral_tr[key].ndim == 1:
-            chiral_tr_final[key] = chiral_tr[key][10::70] #[log_space_chiral[:-1]]  # 40,::30
-        elif chiral_tr[key].ndim == 2:
-            chiral_tr_final[key] = chiral_tr[key][10::70, 10::70] #[log_space_chiral[:-1]][:, log_space_chiral[:-1]]  # 40,::30
+    if matter == 'SNM':
+        chiral_tr_final = {}
+        for key,i in chiral_tr.items():
+            if chiral_tr[key].ndim == 1:
+                chiral_tr_final[key] = chiral_tr[key][40::30] #[log_space_chiral[:-1]] 
+            elif chiral_tr[key].ndim == 2:
+                chiral_tr_final[key] = chiral_tr[key][40::30, 40::30] #[log_space_chiral[:-1]][:, log_space_chiral[:-1]] 
+    else:
+        chiral_tr_final = {}
+        for key,i in chiral_tr.items():
+            if chiral_tr[key].ndim == 1:
+                chiral_tr_final[key] = chiral_tr[key][10::70] 
+            elif chiral_tr[key].ndim == 2:
+                chiral_tr_final[key] = chiral_tr[key][10::70, 10::70]
 
     print(chiral_tr_final['dens'].shape, chiral_tr_final['mean'].shape, \
           chiral_tr_final['std'].shape, chiral_tr_final['cov'].shape)
