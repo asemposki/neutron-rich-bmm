@@ -119,13 +119,13 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
                 chiral_tr_final[key] = chiral_tr[key][40::30] #[log_space_chiral[:-1]] 
             elif chiral_tr[key].ndim == 2:
                 chiral_tr_final[key] = chiral_tr[key][40::30, 40::30] #[log_space_chiral[:-1]][:, log_space_chiral[:-1]] 
-    else:
-        chiral_tr_final = {}
-        for key,i in chiral_tr.items():
-            if chiral_tr[key].ndim == 1:
-                chiral_tr_final[key] = chiral_tr[key][10::70] 
-            elif chiral_tr[key].ndim == 2:
-                chiral_tr_final[key] = chiral_tr[key][10::70, 10::70]
+#     else:
+#         chiral_tr_final = {}
+#         for key,i in chiral_tr.items():
+#             if chiral_tr[key].ndim == 1:
+#                 chiral_tr_final[key] = chiral_tr[key][10::70] 
+#             elif chiral_tr[key].ndim == 2:
+#                 chiral_tr_final[key] = chiral_tr[key][10::70, 10::70]
 
     print(chiral_tr_final['dens'].shape, chiral_tr_final['mean'].shape, \
           chiral_tr_final['std'].shape, chiral_tr_final['cov'].shape)
