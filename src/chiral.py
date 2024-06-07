@@ -37,7 +37,7 @@ from matter import kf_derivative_wrt_density
 
 # from our version of this code
 # from derivatives_new import ObservableContainer, SymmetryEnergyContainer
-from derivatives import ObservableContainer, SymmetryEnergyContainer
+from derivatives_new import ObservableContainer, SymmetryEnergyContainer
 
 # begin the class
 class Chiral:
@@ -241,7 +241,7 @@ class Chiral:
             include_3bf=False,
             derivs=[0, 1, 2],
             verbose=verbose,
-         #   extend=extend,
+            extend=extend,
         )
 
         print('Setting up nuclear matter...', flush=True)
@@ -260,7 +260,7 @@ class Chiral:
             include_3bf=False,
             derivs=[0, 1, 2],
             verbose=verbose,
-          #  extend=extend,
+            extend=extend,
         )
 
         print('Setting up symmetry energy...', flush=True)
