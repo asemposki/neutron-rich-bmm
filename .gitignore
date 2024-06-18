@@ -21,6 +21,7 @@ Pressure_Mixing_cs2.ipynb
 Pressure_Mixing_GP.ipynb
 Gorda_pQCD_gsum.ipynb
 FRG_Inclusion.ipynb
+*.dat
 
 # IDE specifics
 .idea/
