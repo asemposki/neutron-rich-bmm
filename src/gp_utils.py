@@ -1,6 +1,7 @@
 from operator import itemgetter
 from scipy.linalg import cho_solve, cholesky, solve_triangular
 import numpy as np
+from scipy import stats
 
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, Kernel
@@ -14,7 +15,8 @@ GPR_CHOLESKY_LOWER = True
 
 class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
 
-    def fit(self, X, y):
+    # training function ---> add hyperparameter constraints here
+    def fit(self, X, y, priors=True):
         """Fit Gaussian process regression model.
 
         Parameters
@@ -24,12 +26,17 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
 
         y : array-like of shape (n_samples,) or (n_samples, n_targets)
             Target values.
-
+        
+        priors: bool
+            The choice of using priors on the hyperparameters.
+            Default is True.
+            
         Returns
         -------
         self : object
             GaussianProcessRegressor class instance.
         """
+        
         if self.kernel is None:  # Use an RBF kernel as default
             self.kernel_ = C(1.0, constant_value_bounds="fixed") * RBF(
                 1.0, length_scale_bounds="fixed"
@@ -63,14 +70,14 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 f"`n_targets`. Got {n_targets_seen} != {self.n_targets}."
             )
 
-        # Normalize target value
+        # Normalize target value (no using this; doesn't preserve covariances of data set)
         if self.normalize_y:
             self._y_train_mean = np.mean(y, axis=0)
             self._y_train_std = _handle_zeros_in_scale(np.std(y, axis=0), copy=False)
 
             # Remove mean and make unit variance
             y = (y - self._y_train_mean) / self._y_train_std
-
+            
         else:
             shape_y_stats = (y.shape[1],) if y.ndim == 2 else 1
             self._y_train_mean = np.zeros(shape=shape_y_stats)
@@ -88,18 +95,21 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         self.X_train_ = np.copy(X) if self.copy_X_train else X
         self.y_train_ = np.copy(y) if self.copy_X_train else y
 
+        # the part I really care about
         if self.optimizer is not None and self.kernel_.n_dims > 0:
             # Choose hyperparameters based on maximizing the log-marginal
             # likelihood (potentially starting from several initial values)
-            def obj_func(theta, eval_gradient=True):
+            def obj_func(theta, eval_gradient=True, priors=priors):
+                
                 if eval_gradient:
                     lml, grad = self.log_marginal_likelihood(
-                        theta, eval_gradient=True, clone_kernel=False
-                    )
+                        theta, eval_gradient=True, clone_kernel=False, prior=priors
+                    ) 
                     return -lml, -grad
+                
                 else:
                     return -self.log_marginal_likelihood(theta, clone_kernel=False)
-
+                
             # First optimize starting from theta specified in kernel
             optima = [
                 (
@@ -165,7 +175,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         return self
 
     def log_marginal_likelihood(
-            self, theta=None, eval_gradient=False, clone_kernel=True
+            self, theta=None, eval_gradient=False, clone_kernel=True, prior=False
     ):
         """Return log-marginal likelihood of theta for training data.
 
@@ -212,6 +222,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             K = kernel(self.X_train_)
 
         # Alg. 2.1, page 19, line 2 -> L = cholesky(K + sigma^2 I)
+        ### Jordan's code below ###
         # Handle 2d noise:
         if np.iterable(self.alpha) and self.alpha.ndim == 2:
             K += self.alpha
@@ -277,10 +288,53 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             log_likelihood_gradient_dims = 0.5 * np.einsum(
                 "ijl,jik->kl", inner_term, K_gradient
             )
-            # the log likehood gradient is the sum-up across the outputs
+            # the log likelihood gradient is the sum-up across the outputs
             log_likelihood_gradient = log_likelihood_gradient_dims.sum(axis=-1)
+            
+        # adding the log prior in a proxy lml expression 
+        if prior is True:
+            log_prior_value_ls = self.log_prior_ls(theta)
+            log_prior_value_sig = self.log_prior_sig(theta)
+            log_total = log_likelihood + log_prior_value_ls + log_prior_value_sig
+        else:
+            log_total = log_likelihood
 
         if eval_gradient:
-            return log_likelihood, log_likelihood_gradient
+            return log_total, log_likelihood_gradient
         else:
             return log_likelihood
+        
+    # define the prior for the lengthscale (truncated normal)
+    def log_prior_ls(self, theta, *args):
+        
+        # take in lengthscale only for this prior
+        ls = np.exp(theta[1])
+        a = np.exp(self.kernel_.bounds[1,0])
+        b = np.exp(self.kernel_.bounds[1,1])
+                
+        # log uniform prior, bounded
+        def luniform_ls(ls, a, b):
+            if ls > a and ls < b:
+                return 0.0
+            else:
+                return -np.inf
+            
+        return luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.05, 0.1) 
+    
+    # define the prior for the lengthscale (truncated normal)
+    def log_prior_sig(self, theta, *args):
+        
+        # take in lengthscale only for this prior
+        sig = np.exp(theta[0])
+        a = np.exp(self.kernel_.bounds[0,0])
+        b = np.exp(self.kernel_.bounds[0,1])
+                
+        # log uniform prior, bounded
+        def luniform_sig(sig, a, b):
+            if sig > a and sig < b:
+                return 0.0
+            else:
+                return -np.inf
+            
+        return luniform_sig(sig, a, b) + stats.norm.logpdf(sig, 1.0, 0.25) 
+
