@@ -2,6 +2,7 @@ from operator import itemgetter
 from scipy.linalg import cho_solve, cholesky, solve_triangular
 import numpy as np
 from scipy import stats
+import scipy as scipy
 
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, Kernel
@@ -237,7 +238,9 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         y_train = self.y_train_
         if y_train.ndim == 1:
             y_train = y_train[:, np.newaxis]
-
+            
+        ### Where gsum implements stuff ### ----> do we need to alter the likelihood? I don't think so...
+        
         # Alg 2.1, page 19, line 3 -> alpha = L^T \ (L \ y)
         alpha = cho_solve((L, GPR_CHOLESKY_LOWER), y_train, check_finite=False)
 
@@ -296,11 +299,14 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             log_prior_value_ls = self.log_prior_ls(theta)
             log_prior_value_sig = self.log_prior_sig(theta)
             log_total = log_likelihood + log_prior_value_ls + log_prior_value_sig
+            log_total_gradient = log_likelihood_gradient + \
+            self.log_prior_ls_gradient(theta) + self.log_prior_sig_gradient(theta)
         else:
             log_total = log_likelihood
+            log_total_gradient = log_likelihood_gradient
 
         if eval_gradient:
-            return log_total, log_likelihood_gradient
+            return log_total, log_total_gradient
         else:
             return log_likelihood
         
@@ -321,6 +327,15 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             
         return luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.05, 0.1) 
     
+    
+    def log_prior_ls_gradient(self, theta, *args):
+        
+        # take in lengthscale only for this prior
+        ls = np.exp(theta[1])
+        
+        return - 2.0 / (ls - 1.05)
+    
+    
     # define the prior for the lengthscale (truncated normal)
     def log_prior_sig(self, theta, *args):
         
@@ -337,4 +352,83 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 return -np.inf
             
         return luniform_sig(sig, a, b) + stats.norm.logpdf(sig, 1.0, 0.25) 
+    
+    
+    def log_prior_sig_gradient(self, theta, *args):
+        
+        # take in lengthscale only for this prior
+        sig = np.exp(theta[0])
+        
+        return -2.0 / (sig - 1.0)
+    
+    
+    def _constrained_optimization(self, obj_func, initial_theta, bounds):
+        if self.optimizer == "fmin_l_bfgs_b":
+            opt_res = scipy.optimize.minimize(
+                obj_func,
+                initial_theta,
+                method="L-BFGS-B",
+                jac=True,
+                bounds=bounds,
+                tol=1e-12,
+            )
+            self._check_optimize_result("lbfgs", opt_res)
+            theta_opt, func_min = opt_res.x, opt_res.fun
+        elif callable(self.optimizer):
+            theta_opt, func_min = self.optimizer(obj_func, initial_theta, bounds=bounds)
+        else:
+            raise ValueError(f"Unknown optimizer {self.optimizer}.")
 
+        return theta_opt, func_min
+    
+    
+    def _check_optimize_result(self, solver, result, max_iter=None, extra_warning_msg=None):
+        """Check the OptimizeResult for successful convergence
+
+        Parameters
+        ----------
+        solver : str
+           Solver name. Currently only `lbfgs` is supported.
+
+        result : OptimizeResult
+           Result of the scipy.optimize.minimize function.
+
+        max_iter : int, default=None
+           Expected maximum number of iterations.
+
+        extra_warning_msg : str, default=None
+            Extra warning message.
+
+        Returns
+        -------
+        n_iter : int
+           Number of iterations.
+        """
+        # handle both scipy and scikit-learn solver names
+        if solver == "lbfgs":
+            if result.status != 0:
+                try:
+                    # The message is already decoded in scipy>=1.6.0
+                    result_message = result.message.decode("latin1")
+                except AttributeError:
+                    result_message = result.message
+                warning_msg = (
+                    "{} failed to converge (status={}):\n{}.\n\n"
+                    "Increase the number of iterations (max_iter) "
+                    "or scale the data as shown in:\n"
+                    "    https://scikit-learn.org/stable/modules/"
+                    "preprocessing.html"
+                ).format(solver, result.status, result_message)
+                if extra_warning_msg is not None:
+                    warning_msg += "\n" + extra_warning_msg
+                warnings.warn(warning_msg, ConvergenceWarning, stacklevel=2)
+            if max_iter is not None:
+                # In scipy <= 1.0.0, nit may exceed maxiter for lbfgs.
+                # See https://github.com/scipy/scipy/issues/7854
+                n_iter_i = min(result.nit, max_iter)
+            else:
+                n_iter_i = result.nit
+        else:
+            raise NotImplementedError
+
+        return n_iter_i
