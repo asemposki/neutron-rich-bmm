@@ -294,7 +294,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             # the log likelihood gradient is the sum-up across the outputs
             log_likelihood_gradient = log_likelihood_gradient_dims.sum(axis=-1)
             
-        # adding the log prior in a proxy lml expression 
+        ### ---- adding the log prior in a proxy lml expression ---- ###
         if prior is True:
             log_prior_value_ls = self.log_prior_ls(theta)
             log_prior_value_sig = self.log_prior_sig(theta)
@@ -324,8 +324,10 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 return 0.0
             else:
                 return -np.inf
+        
+        return luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.8, 0.1) # 20n0
             
-        return luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.05, 0.1) 
+        #return luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.05, 0.1)  # 40n0
     
     
     def log_prior_ls_gradient(self, theta, *args):
@@ -333,7 +335,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         # take in lengthscale only for this prior
         ls = np.exp(theta[1])
         
-        return - 2.0 / (ls - 1.05)
+        return - 2.0 / (ls - 0.8)#40n0 => 1.05)
     
     
     # define the prior for the lengthscale (truncated normal)
