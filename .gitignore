@@ -22,6 +22,9 @@ Pressure_Mixing_GP.ipynb
 Gorda_pQCD_gsum.ipynb
 FRG_Inclusion.ipynb
 *.dat
+notebooks/Plots/
+notebooks/More_Plots/
+notebooks/Old_notebooks/
 
 # IDE specifics
 .idea/
