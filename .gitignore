@@ -9,9 +9,7 @@ gptools/
 gsum/
 nuclear-matter-convergence/
 figures/
-multiple_densities/
-sampled_curves/
-old_notebooks/
+old/
 *.csv
 .ipynb_checkpoints/
 .DS_Store
@@ -24,7 +22,6 @@ FRG_Inclusion.ipynb
 *.dat
 notebooks/Plots/
 notebooks/More_Plots/
-notebooks/Old_notebooks/
 
 # IDE specifics
 .idea/
