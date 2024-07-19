@@ -170,6 +170,7 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
     print('Cov shape:', training_set['cov'].shape)
     
     return training_set
+    
 
 # define the speed of sound function 
 def speed_of_sound(dens, pressure, edens=None, sat=False, integrate='forward', sampled=False):
@@ -244,7 +245,7 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, integrate='forward', s
     # using samples
     if sampled is True:
         pres = np.asarray(pressure['samples'])   # (nB, n_samples) shape
-        edens_0 = edens['mean']
+        edens_0 = edens['samples'] #edens['mean']   ### how did we not catch this we neeeeeed to fix this...
         
         # huge list for all sampled curves
         edens_full = []
@@ -261,7 +262,7 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, integrate='forward', s
             en_samples = np.zeros(len(pres))
             
             # outer term (not changing with n)
-            outer = (edens_0/dens[-1])
+            outer = (edens_0[i]/dens[-1])  # adding change of integration constant w/each sample
 
             # running integration backward from pQCD
             for j in range(len(dens)):

@@ -575,7 +575,35 @@ class PQCD:
         }
         
         return pressure_n
-  
+    
+    
+    # create function for the pQCD energy density anchor points 
+    # (samples assumed format: [dens, samples])
+    def anchor_point_edens(self, samples, anchor):
+
+        # get density value from anchor [fm^-3]
+        self.n_anchor = anchor
+
+        # use this to calculate chemical potential
+        n_q = self.n_anchor * 3.0  # n_q [fm^-3]
+
+        # convert to GeV^3 for mu_q
+        conversion_fm3 = ((1000.0)**(3.0))/((197.33)**(3.0)) # [fm^-3]  (do the opposite of this)
+        n_q = n_q/conversion_fm3  # [GeV^3]
+
+        # invert to get mu
+        _, mu_n, _ = self.inversion(n_mu=n_q.reshape(-1,1))  # [GeV] # these are quark chemical potentials
+
+        # take mu and get MeV (and baryon) version
+        mu = mu_n * 1e3
+        
+        # now calculate the edens array using these pieces (assuming last entry is anchor point)
+        edens_0_array = np.zeros([len(samples.T)])
+        for i in range(len(samples.T)):
+            edens_0_array[i] = 3.0 * self.n_anchor * mu - samples[-1,i]  # needs to be quark version, but MeV/fm^3!
+
+        return edens_0_array
+
 
     @staticmethod
     def mask_array(array, neg=False, fill_value=None):
