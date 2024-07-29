@@ -436,6 +436,7 @@ def select_draws(pressure_dict:dict):
     
     return np.asarray(valid_samples)
 
+
 def boundary_conditions(dens, pres_dict, index=0):
     
     '''
