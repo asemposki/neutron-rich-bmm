@@ -412,6 +412,30 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, integrate='forward', s
     return dens_arr, cs2, cs2_log, edens_int, mu_dict
 
 
+def select_draws(pressure_dict:dict):
+
+    # pull samples
+    samples = pressure_dict['samples']   # [dens, draws]
+    mean = pressure_dict['mean']
+    std = pressure_dict['std_dev']
+    lower_cutoff = mean - std
+    upper_cutoff = mean + std
+
+    # craft list for our new samples
+    reduced_samples = samples.copy()
+    rows_2_remove = []
+
+    # run through all samples and densities
+    for i, sample in enumerate(samples.T):
+        result = sample < lower_cutoff
+        result2 = sample > upper_cutoff
+        if True in result or True in result2:
+            rows_2_remove.append(i)
+    
+    valid_samples = np.delete(reduced_samples, rows_2_remove, axis=1)
+    
+    return np.asarray(valid_samples)
+
 def boundary_conditions(dens, pres_dict, index=0):
     
     '''
