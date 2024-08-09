@@ -3,6 +3,7 @@ from scipy.linalg import cho_solve, cholesky, solve_triangular
 import numpy as np
 from scipy import stats
 import scipy as scipy
+import warnings
 
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, Kernel
@@ -17,7 +18,7 @@ GPR_CHOLESKY_LOWER = True
 class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
 
     # training function ---> add hyperparameter constraints here
-    def fit(self, X, y, priors=True):
+    def fit(self, X, y, priors=True, cutoff=40):
         """Fit Gaussian process regression model.
 
         Parameters
@@ -32,11 +33,17 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             The choice of using priors on the hyperparameters.
             Default is True.
             
+        cutoff : int
+            The toggle for which pQCD cutoff we are using. 
+            Default is 40.
+            
         Returns
         -------
         self : object
             GaussianProcessRegressor class instance.
         """
+        
+        self.cutoff = cutoff
         
         if self.kernel is None:  # Use an RBF kernel as default
             self.kernel_ = C(1.0, constant_value_bounds="fixed") * RBF(
@@ -324,10 +331,12 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 return 0.0
             else:
                 return -np.inf
-        
-       # return luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.8, 0.1) # 20n0
             
-        return luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.05, 0.1)  # 40n0
+        if self.cutoff == 20:
+            return luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.8, 0.1) # 20n0
+           
+        elif self.cutoff == 40:
+            return luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.05, 0.1)  # 40n0
     
     
     def log_prior_ls_gradient(self, theta, *args):
@@ -335,9 +344,11 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         # take in lengthscale only for this prior
         ls = np.exp(theta[1])
         
-        return - 2.0 / (ls - 1.05)
+        if self.cutoff == 20:
+            return - 2.0 / (ls - 1.05)
         
-       # return - 2.0 / (ls - 0.8)   #40n0 => 1.05)
+        elif self.cutoff == 40:
+            return - 2.0 / (ls - 0.8)   #40n0 => 1.05)
     
     
     # define the prior for the lengthscale (truncated normal)
@@ -425,7 +436,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 ).format(solver, result.status, result_message)
                 if extra_warning_msg is not None:
                     warning_msg += "\n" + extra_warning_msg
-                warnings.warn(warning_msg, ConvergenceWarning, stacklevel=2)
+                warnings.warn(warning_msg) #ConvergenceWarning, stacklevel=2)  # commenting out for now
             if max_iter is not None:
                 # In scipy <= 1.0.0, nit may exceed maxiter for lbfgs.
                 # See https://github.com/scipy/scipy/issues/7854
