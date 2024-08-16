@@ -4,8 +4,13 @@ import scipy.integrate as scint
 import scipy as sp
 from scipy.interpolate import interp1d
 import numdifftools as ndt
+import matplotlib.pyplot as plt
 
 from pqcd_reworked import PQCD
+
+# global constants
+n0 = 0.164
+    
 
 # function for obtaining training data for GP implementation
 def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
@@ -277,10 +282,10 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, integrate='forward', s
                                  i in range(len(edens_full))])   # samples, nB
 
         # get the results using 1/mu dP/dn instead (more stable)
-        print(pres.shape)  # nB, samples
+        #print(pres.shape)  # nB, samples
         dpdn_samples = np.gradient(pres, dn, axis=0, edge_order=2)
         
-        print(dpdn_samples.shape)
+        #print(dpdn_samples.shape)
         
         cs2_samples = np.asarray([(mu_samples[i,:])**(-1.0) * dpdn_samples[:,i] \
                                   for i in range(len(edens_full))])
@@ -435,6 +440,141 @@ def select_draws(pressure_dict:dict):
     valid_samples = np.delete(reduced_samples, rows_2_remove, axis=1)
     
     return np.asarray(valid_samples)
+
+# define function for the cs2 calculation in full
+def cs2_routine(gp_dict, sat_cut=None, plot=True, save_data=False):
+    
+    # unpack the dict
+    gp_dens = gp_dict['dens']
+    gp_mean = gp_dict['mean']
+    gp_std = gp_dict['std_dev']
+    
+    # set up the samples
+    if gp_dict['samples'] is not None and gp_dict['true'] is None:
+        pres_samples = gp_dict['samples']
+    elif gp_dict['true'] is not None and gp_dict['samples'] is None:
+        pres_samples = gp_dict['true']
+    else:
+        raise ValueError('Too many variables to assign.')
+    
+    #conversion for speed of sound
+    convert_pqcd = np.load('../data/eos_data/pqcd_fg_data_NSM.npz')
+
+    # interpolate for a functional form to use 
+    convert_interp = sp.interpolate.interp1d(convert_pqcd['density'], convert_pqcd['mean'], \
+                                     kind='cubic', fill_value='extrapolate')
+
+    # run interpolation for FG scaling (needed for determination of P(n) from scaled result)
+    gp_cs2_convert_arr = convert_interp(gp_dens)
+    
+    # convert samples over
+    pres_samples_unscaled = [pres_samples[:,i]*gp_cs2_convert_arr \
+                             for i in range(len(np.asarray(pres_samples).T))]
+    
+    pres_dict = {
+        'dens': gp_dens[sat_cut:],
+        'mean': gp_mean[sat_cut:]*gp_cs2_convert_arr[sat_cut:],
+        'std_dev': gp_std[sat_cut:]*gp_cs2_convert_arr[sat_cut:],
+        'samples': np.asarray(pres_samples_unscaled)[:, sat_cut:].T
+    }
+    
+    # energy density bounds (not changing)
+    en_0 = 43656.4556069574
+    en_0_lower = 43510.21143367375
+    en_0_upper = 43797.873283570414
+
+    # for draws, try new anchor point function
+    pqcd_class = PQCD(X=1, Nf=3)
+    edens_0_draw_arr = pqcd_class.anchor_point_edens(pres_dict['samples'], \
+                                                     anchor=gp_dens[-1])
+
+    # make dict of values to send to speed of sound code
+    edens_dict = {
+        'mean': en_0, 
+        'lower': en_0_lower,
+        'upper': en_0_upper,
+        'samples': edens_0_draw_arr
+    }
+    
+    # call speed of sound function (sampled = True automatically runs the integration downwards)
+    cs2_sampled, edens_full = speed_of_sound(gp_dens[sat_cut:], pres_dict, \
+                                         edens_dict, sat=False, sampled=True)
+    
+    # get mean and std_dev for edens to plot P(eps)
+    edens_mean = np.nanmean(edens_full, axis=0)
+    edens_std = np.nanstd(edens_full, axis=0)
+    
+    # dict entries 
+    cs2_sampled_mean = cs2_sampled['mean']
+    cs2_sampled_std = cs2_sampled['std']
+    cs2_sampled_samples = cs2_sampled['samples']
+    
+    # plot if desired
+    if plot is True:
+        cs2_plots(edens_full, pres_dict, cs2_sampled, sat_cut)
+        
+    # save for plotting later (uncomment to save)
+    if save_data is True:
+        np.savez('../data/eos_data/cs2_gp_40.npz', dens=gp_dens[sat_cut:], \
+                 mean=cs2_sampled['mean'], std=cs2_sampled['std'], samples=cs2_sampled['samples'])
+        
+    # print statement to let user know it has finished
+    print('Woo it is over!')
+
+    return pres_dict, edens_full, cs2_sampled
+
+# plotter for speed of sound and draws
+def cs2_plots(edens_full, pres_dict, cs2_sampled, sat_cut):
+
+    # energy density plot
+    sat_cut = 0
+    density_test = pres_dict['dens']
+    [plt.plot(density_test[sat_cut:]/n0, edens_full[i]) for i in range(len(edens_full))]
+    plt.xlabel(r'$n/n_{0}$')
+    plt.ylabel(r'$\varepsilon(n)$')
+    plt.xlim(0.16/n0, 16.4/n0)
+    plt.xscale('log')
+    plt.show()
+
+    # plot the pressure vs. energy density
+    plt.plot(np.nanmean(edens_full, axis=0), pres_dict['mean'])
+    plt.fill_between(np.nanmean(edens_full, axis=0), pres_dict['mean']-pres_dict['std_dev'], \
+                     pres_dict['mean']+pres_dict['std_dev'], alpha=0.2)
+    plt.xlabel(r'$\varepsilon(n)$')
+    plt.ylabel(r'$P(n)$')
+    plt.show()
+
+    # samples plot
+    [plt.plot(density_test[sat_cut:]/n0, cs2_sampled['samples'][i]) for i in range(len(edens_full))]
+    plt.axhline(y=1.0/3.0, linestyle='dashed')
+    plt.xlabel(r'$n/n_{0}$')
+    plt.ylabel(r'$c_{s}^{2}(n)$')
+    plt.xlim(0.16/n0, 16.4/n0)
+    plt.xscale('log')
+    plt.ylim(0.0, 0.75)
+    plt.show()
+
+    # mean and std dev band plot
+    [plt.plot(density_test[sat_cut:]/n0, cs2_sampled['samples'][i], alpha=0.1) \
+     for i in range(len(edens_full))]
+    plt.plot(density_test[sat_cut:]/n0, cs2_sampled['mean'], 'k', zorder=20, label=r'Mean')
+    plt.fill_between(density_test[sat_cut:]/n0, \
+                     cs2_sampled['mean']-cs2_sampled['std'], cs2_sampled['mean']+cs2_sampled['std'], \
+                     zorder=12, label=r'1-$\sigma$')
+    plt.fill_between(density_test[sat_cut:]/n0, \
+                     cs2_sampled['mean']-1.96*cs2_sampled['std'], \
+                     cs2_sampled['mean']+1.96*cs2_sampled['std'], \
+                     label=r'2-$\sigma$', zorder=10)
+    plt.axhline(y=1.0/3.0, linestyle='dashed')
+    plt.xlabel(r'$n/n_{0}$')
+    plt.ylabel(r'$c_{s}^{2}(n)$')
+    plt.xlim(0.13/n0, 16.4/n0)
+    plt.xscale('log')
+    plt.ylim(0.0, 0.75)
+    plt.legend(loc='lower right')
+    plt.show()
+
+    return None
 
 
 def boundary_conditions(dens, pres_dict, index=0):
