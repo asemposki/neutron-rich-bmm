@@ -4,6 +4,7 @@ import numpy as np
 from scipy import stats
 import scipy as scipy
 import warnings
+import numdifftools as ndt
 
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, Kernel
@@ -18,7 +19,7 @@ GPR_CHOLESKY_LOWER = True
 class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
 
     # training function ---> add hyperparameter constraints here
-    def fit(self, X, y, priors=True, cutoff=40):
+    def fit(self, X, y, priors=True, prior_choice='truncnorm', cutoff=40):
         """Fit Gaussian process regression model.
 
         Parameters
@@ -33,6 +34,11 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             The choice of using priors on the hyperparameters.
             Default is True.
             
+        prior_choice: str
+            The choice of which type of prior to use on the length scale.
+            Default is 'truncnorm'; other options are 'skewnorm' and 
+            'uniform'.
+            
         cutoff : int
             The toggle for which pQCD cutoff we are using. 
             Default is 40.
@@ -43,7 +49,9 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             GaussianProcessRegressor class instance.
         """
         
+        # assign class variables
         self.cutoff = cutoff
+        self.prior_choice = prior_choice
         
         if self.kernel is None:  # Use an RBF kernel as default
             self.kernel_ = C(1.0, constant_value_bounds="fixed") * RBF(
@@ -324,32 +332,90 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         ls = np.exp(theta[1])
         a = np.exp(self.kernel_.bounds[1,0])
         b = np.exp(self.kernel_.bounds[1,1])
-                
-        # log uniform prior, bounded
-        def luniform_ls(ls, a, b):
-            if ls > a and ls < b:
-                return 0.0
-            else:
-                return -np.inf
+        
+        if self.prior_choice == 'truncnorm_01':
+            if self.cutoff == 20:
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.6, 0.1) # 20n0 0.8
+
+            elif self.cutoff == 40:
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.95, 0.1)  # 40n0  1.05, 0.1
             
-        if self.cutoff == 20:
-            return luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.8, 0.1) # 20n0
-           
-        elif self.cutoff == 40:
-            return luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.05, 0.1)  # 40n0
-    
+        if self.prior_choice == 'truncnorm_15':
+            if self.cutoff == 20:
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.6, 0.15) # 20n0 0.8
+
+            elif self.cutoff == 40:
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.95, 0.15)  # 40n0  1.05, 0.1
+        
+        # leave un-truncated, truncate later if needed; really gives you 1.0 so far (fat EOS)
+        elif self.prior_choice == 'skewnorm':
+            if self.cutoff == 20:
+                return stats.skewnorm.logpdf(ls, a=-5.0, loc=0.65, scale=0.5) 
+            elif self.cutoff == 40:
+                return stats.skewnorm.logpdf(ls, a=-5.0, loc=1.0, scale=0.5)
+            
+        # leave un-truncated, truncate later if needed; really gives you 1.0 so far (fat EOS)
+        elif self.prior_choice == 'skewnorm_constrained':
+            if self.cutoff == 20:
+                return stats.skewnorm.logpdf(ls, a=-2.0, loc=0.65, scale=0.5) 
+            elif self.cutoff == 40:
+                return stats.skewnorm.logpdf(ls, a=-2.0, loc=1.0, scale=0.5) 
+              
+        elif self.prior_choice == 'uniform':
+            return self.luniform_ls(ls, a, b)
     
     def log_prior_ls_gradient(self, theta, *args):
         
         # take in lengthscale only for this prior
         ls = np.exp(theta[1])
+        a = np.exp(self.kernel_.bounds[1,0])
+        b = np.exp(self.kernel_.bounds[1,1])
         
-        if self.cutoff == 20:
-            return - 2.0 / (ls - 1.05)
+        if self.prior_choice == 'truncnorm_01':
+            # function derivative
+            def trunc_deriv_01(ls):
+                if self.cutoff == 20:
+                    trunc_01 = stats.norm.logpdf(ls, 0.6, 0.1)
+                elif self.cutoff == 40:
+                    trunc_01 = stats.norm.logpdf(ls, 0.95, 0.1)
+                return trunc_01
+            deriv_truncnorm_01 = ndt.Derivative(trunc_deriv_01, step=1e-4, method='central')
+            return deriv_truncnorm_01(ls) + self.luniform_ls(ls, a, b)
         
-        elif self.cutoff == 40:
-            return - 2.0 / (ls - 0.8)   #40n0 => 1.05)
-    
+        elif self.prior_choice == 'truncnorm_15':
+            # function derivative
+            def trunc_deriv_15(ls):
+                if self.cutoff == 20:
+                    trunc_15 = stats.norm.logpdf(ls, 0.6, 0.15)
+                elif self.cutoff == 40:
+                    trunc_15 = stats.norm.logpdf(ls, 0.95, 0.15)
+                return trunc_15
+            deriv_truncnorm_15 = ndt.Derivative(trunc_deriv_15, step=1e-4, method='central')
+            return deriv_truncnorm_15(ls) + self.luniform_ls(ls, a, b)
+
+        elif self.prior_choice == 'skewnorm':
+            def skew_deriv(ls):
+                if self.cutoff == 20:
+                    skew_norm = stats.skewnorm.logpdf(ls, a=-5.0, loc=0.65, scale=0.5)
+                elif self.cutoff == 40:
+                    skew_norm = stats.skewnorm.logpdf(ls, a=-5.0, loc=1.0, scale=0.5)
+                return skew_norm
+            deriv_skewnorm = ndt.Derivative(skew_deriv, step=1e-4, method='central')
+            return deriv_skewnorm(ls)
+        
+        elif self.prior_choice == 'skewnorm_constrained':
+            def skew_deriv(ls):
+                if self.cutoff == 20:
+                    skew_norm = stats.skewnorm.logpdf(ls, a=-2.0, loc=0.65, scale=0.5)
+                elif self.cutoff == 40:
+                    skew_norm = stats.skewnorm.logpdf(ls, a=-2.0, loc=1.0, scale=0.5)
+                return skew_norm
+            deriv_skewnorm = ndt.Derivative(skew_deriv, step=1e-4, method='central')
+            return deriv_skewnorm(ls)
+                   
+        elif self.prior_choice == 'uniform':
+            return self.luniform_ls(ls, a, b)
+  
     
     # define the prior for the lengthscale (truncated normal)
     def log_prior_sig(self, theta, *args):
@@ -373,8 +439,24 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         
         # take in lengthscale only for this prior
         sig = np.exp(theta[0])
+        a = np.exp(self.kernel_.bounds[0,0])
+        b = np.exp(self.kernel_.bounds[0,1])
         
-        return -2.0 / (sig - 1.0)
+        # function derivative
+        def trunc_deriv(sig):
+            trunc = stats.norm.logpdf(sig, 1.0, 0.25) 
+            return trunc
+        deriv_trunc = ndt.Derivative(trunc_deriv, step=1e-4, method='central')
+
+        return deriv_trunc(sig) + self.luniform_ls(sig, a, b)
+    
+    
+    # log uniform prior, bounded
+    def luniform_ls(self, ls, a, b):
+        if ls > a and ls < b:
+            return 0.0
+        else:
+            return -np.inf
     
     
     def _constrained_optimization(self, obj_func, initial_theta, bounds):
