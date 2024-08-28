@@ -121,9 +121,9 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
         chiral_tr_final = {}
         for key,i in chiral_tr.items():
             if chiral_tr[key].ndim == 1:
-                chiral_tr_final[key] = chiral_tr[key][40::30] #[40::30] #[log_space_chiral[:-1]] 
+                chiral_tr_final[key] = chiral_tr[key][40::15] #[40::30]
             elif chiral_tr[key].ndim == 2:
-                chiral_tr_final[key] = chiral_tr[key][40::30,40::30] #[40::30, 40::30] #[log_space_chiral[:-1]][:, log_space_chiral[:-1]] 
+                chiral_tr_final[key] = chiral_tr[key][40::15,40::15] #[40::30, 40::30]
 #     else:
 #         chiral_tr_final = {}
 #         for key,i in chiral_tr.items():
@@ -174,7 +174,7 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
     # print the covariance to check
     print('Cov shape:', training_set['cov'].shape)
     
-    return training_set
+    return chiral_tr_final, pqcd_tr_final, training_set
     
 
 # define the speed of sound function 

@@ -318,7 +318,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             self.log_prior_ls_gradient(theta) + self.log_prior_sig_gradient(theta)
         else:
             log_total = log_likelihood
-            log_total_gradient = log_likelihood_gradient   # issue with this guy not working when no params to optimize
+          #  log_total_gradient = log_likelihood_gradient   # issue with this guy not working when no params to optimize
 
         if eval_gradient:
             return log_total, log_total_gradient
