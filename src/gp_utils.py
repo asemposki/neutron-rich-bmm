@@ -320,8 +320,10 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             log_total = log_likelihood
           #  log_total_gradient = log_likelihood_gradient   # issue with this guy not working when no params to optimize
 
-        if eval_gradient:
+        if eval_gradient and prior is True:
             return log_total, log_total_gradient
+        elif eval_gradient and prior is False:
+            return log_total, log_likelihood_gradient
         else:
             return log_likelihood
         
@@ -338,7 +340,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.6, 0.1) # 20n0 0.8
 
             elif self.cutoff == 40:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.95, 0.1)  # 40n0  1.05, 0.1
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.95, 0.1)  # 40n0  0.95, 0.1
             
         if self.prior_choice == 'truncnorm_15':
             if self.cutoff == 20:
@@ -347,14 +349,14 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             elif self.cutoff == 40:
                 return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.95, 0.15)  # 40n0  1.05, 0.1
         
-        # leave un-truncated, truncate later if needed; really gives you 1.0 so far (fat EOS)
+        # leave un-truncated, truncate later if needed; really gives you 1.0 so far (phat EOS)
         elif self.prior_choice == 'skewnorm':
             if self.cutoff == 20:
                 return stats.skewnorm.logpdf(ls, a=-5.0, loc=0.65, scale=0.5) 
             elif self.cutoff == 40:
                 return stats.skewnorm.logpdf(ls, a=-5.0, loc=1.0, scale=0.5)
             
-        # leave un-truncated, truncate later if needed; really gives you 1.0 so far (fat EOS)
+        # leave un-truncated, truncate later if needed; really gives you 1.0 so far (phat EOS)
         elif self.prior_choice == 'skewnorm_constrained':
             if self.cutoff == 20:
                 return stats.skewnorm.logpdf(ls, a=-2.0, loc=0.65, scale=0.5) 
@@ -432,7 +434,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             else:
                 return -np.inf
             
-        return luniform_sig(sig, a, b) + stats.norm.logpdf(sig, 1.0, 0.25) 
+        return luniform_sig(sig, a, b) + stats.norm.logpdf(sig, 1.0, 0.25) # 0.25
     
     
     def log_prior_sig_gradient(self, theta, *args):

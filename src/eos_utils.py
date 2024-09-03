@@ -115,8 +115,8 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
             chiral_tr[key] = chiral_train[key][:chiral_cutoff, :chiral_cutoff]
 
     # chiral point selection
-   # log_space_chiral = get_linear_mask_in_log_space(chiral_train['dens'], chiral_train['dens'][40],\
-                                               #     chiral_train['dens'][chiral_cutoff], 0.25, base=np.e)
+  #  log_space_chiral = get_linear_mask_in_log_space(chiral_train['dens'], chiral_train['dens'][40],\
+   #                                                 chiral_train['dens'][chiral_cutoff], 0.25, base=np.e)
     if matter == 'SNM':
         chiral_tr_final = {}
         for key,i in chiral_tr.items():
@@ -154,9 +154,9 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
     pqcd_tr_final = {}
     for key,i in pqcd_tr.items():
         if pqcd_tr[key].ndim == 1:
-            pqcd_tr_final[key] = pqcd_tr[key][::50]
+            pqcd_tr_final[key] = pqcd_tr[key][::25]  # 50 before
         elif pqcd_tr[key].ndim == 2:
-            pqcd_tr_final[key] = pqcd_tr[key][::50, ::50]#[log_space_pqcd][:, log_space_pqcd]
+            pqcd_tr_final[key] = pqcd_tr[key][::25, ::25]#[log_space_pqcd][:, log_space_pqcd]
 
     print(chiral_tr_final['dens'].shape, chiral_tr_final['mean'].shape, \
           chiral_tr_final['std'].shape, chiral_tr_final['cov'].shape)
