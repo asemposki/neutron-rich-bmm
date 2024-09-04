@@ -121,9 +121,9 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
         chiral_tr_final = {}
         for key,i in chiral_tr.items():
             if chiral_tr[key].ndim == 1:
-                chiral_tr_final[key] = chiral_tr[key][40::15] #[40::30]
+                chiral_tr_final[key] = chiral_tr[key][40::20] #[40::30]
             elif chiral_tr[key].ndim == 2:
-                chiral_tr_final[key] = chiral_tr[key][40::15,40::15] #[40::30, 40::30]
+                chiral_tr_final[key] = chiral_tr[key][40::20,40::20] #[40::30, 40::30]
 #     else:
 #         chiral_tr_final = {}
 #         for key,i in chiral_tr.items():
@@ -154,9 +154,9 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
     pqcd_tr_final = {}
     for key,i in pqcd_tr.items():
         if pqcd_tr[key].ndim == 1:
-            pqcd_tr_final[key] = pqcd_tr[key][::25]  # 50 before
+            pqcd_tr_final[key] = pqcd_tr[key][::50]  # 50 before
         elif pqcd_tr[key].ndim == 2:
-            pqcd_tr_final[key] = pqcd_tr[key][::25, ::25]#[log_space_pqcd][:, log_space_pqcd]
+            pqcd_tr_final[key] = pqcd_tr[key][::50, ::50]#[log_space_pqcd][:, log_space_pqcd]
 
     print(chiral_tr_final['dens'].shape, chiral_tr_final['mean'].shape, \
           chiral_tr_final['std'].shape, chiral_tr_final['cov'].shape)
