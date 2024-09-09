@@ -121,9 +121,9 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
         chiral_tr_final = {}
         for key,i in chiral_tr.items():
             if chiral_tr[key].ndim == 1:
-                chiral_tr_final[key] = chiral_tr[key][40::15] #[15::20] #[40::30] # [15::20] works well for full chiral curve
+                chiral_tr_final[key] = chiral_tr[key][20::8] #[15::20] #[40::30] # [15::20] works well for full chiral curve
             elif chiral_tr[key].ndim == 2:
-                chiral_tr_final[key] = chiral_tr[key][40::15, 40::15] #[15::20,15::20] #[40::30, 40::30]
+                chiral_tr_final[key] = chiral_tr[key][20::8, 20::8] #[15::20,15::20] #[40::30, 40::30]
 #     else:
 #         chiral_tr_final = {}
 #         for key,i in chiral_tr.items():
