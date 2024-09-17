@@ -88,7 +88,7 @@ class SymmetryEnergyKernel(Kernel):
         # Kf_s_j = Kf_n_j
 
         if np.any(ni > 1) or np.any(nj > 1):
-            raise ValueError('SymmetryEnergyKernel can currently only one derivative wrt density')
+            raise ValueError('SymmetryEnergyKernel can currently only compute one derivative wrt density')
         from matter import kf_derivative_wrt_density
 
         # Take derivatives with respect to density, not kf
@@ -124,6 +124,7 @@ class SymmetryEnergyKernel(Kernel):
         # cov_sn *= factor_s_i * factor_n_j
         cov_ns *= factor_n_i * factor_n_j
         cov_sn *= factor_n_i * factor_n_j
+        
         return cov_n + cov_s - cov_ns - cov_sn
 
 
@@ -896,12 +897,12 @@ class SymmetryEnergyContainer(ObservableContainer):
         self.ref_n = ref_n
         self.ref_s = ref_s
 
-        kf_conversion = 2 ** (1 / 3.)
+        kf_conversion = 2 ** (1 / 3.)  # good
 
         if rho is not None:
             ls_s = ls_n / kf_conversion
         else:
-            ls_s_scaled = kf_conversion * ls_s
+            ls_s_scaled = kf_conversion * ls_s    # correct
 
         from functools import partial
         # transform_n = partial(fermi_momentum, degeneracy=2)
@@ -918,8 +919,9 @@ class SymmetryEnergyContainer(ObservableContainer):
             std_off = np.sqrt(std_s * std_n) * rho
             ls_off = ls_n
         else:
+            print('Rho is none...')  #  rho actually is None here
             # But the off-diagonal will take kf_n as an argument, so use scaled length scale
-            std_off = np.sqrt(std_s * std_n) * (2 * ls_n * ls_s_scaled / (ls_n**2 + ls_s_scaled**2)) ** 0.25
+            std_off = np.sqrt(std_s * std_n) * (2 * ls_n * ls_s_scaled / (ls_n**2 + ls_s_scaled**2)) ** 0.25   # correct
             ls_off = np.sqrt((ls_s_scaled**2 + ls_n**2) / 2)
         ref_off = np.sqrt(ref_s * ref_n)
         self.coeff_kernel_off = SquaredExponentialKernel(

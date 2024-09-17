@@ -161,22 +161,20 @@ class Chiral:
             self.ls_neutron = 0.973
             self.std_nuclear = 2.95
             self.ls_nuclear = 0.484
+            
+            self.rho = None   # letting it calculate rho
+            self.ls_n_sym = self.ls_neutron
+            self.ls_s_sym = self.ls_nuclear
 
         elif self.Lambda == 450:
             self.std_neutron = 0.8684060649936118
             self.ls_neutron = 0.7631421388401067
             self.std_nuclear = 2.6146499024837073
             self.ls_nuclear = 0.46603268529311087
-
-        if self.Lambda == 450:
+            
             self.rho = 0.95
             self.ls_n_sym = (self.ls_neutron + self.ls_nuclear) / 2
             self.ls_s_sym = None
-        
-        elif self.Lambda == 500:
-            self.rho = None   # letting it calculate rho
-            self.ls_n_sym = self.ls_neutron
-            self.ls_s_sym = self.ls_nuclear
 
         return None
     

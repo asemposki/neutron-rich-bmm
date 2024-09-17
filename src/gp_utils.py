@@ -234,8 +234,10 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
 
         if eval_gradient:
             K, K_gradient = kernel(self.X_train_, eval_gradient=True)
+            self.K_copy = K
         else:
             K = kernel(self.X_train_)
+            self.K_copy = K
 
         # Alg. 2.1, page 19, line 2 -> L = cholesky(K + sigma^2 I)
         ### Jordan's code below ###
