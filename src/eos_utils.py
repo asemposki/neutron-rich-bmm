@@ -115,7 +115,7 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
             chiral_tr[key] = chiral_train[key][:chiral_cutoff, :chiral_cutoff]
 
     # chiral point selection
-    if matter == 'ANM':       # work on making this uneven later tonight
+    if matter == 'ANM':   
         chiral_tr_final = {}
         for key,i in chiral_tr.items():
             if chiral_tr[key].ndim == 1:
@@ -131,6 +131,14 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
             elif chiral_tr[key].ndim == 2:
                 chiral_tr_final[key] = chiral_tr[key][40::30, 40::30]
 
+    elif matter == 'PNM':
+        chiral_tr_final = {}
+        for key,i in chiral_tr.items():
+            if chiral_tr[key].ndim == 1:
+                chiral_tr_final[key] = chiral_tr[key][30::9] 
+            elif chiral_tr[key].ndim == 2:
+                chiral_tr_final[key] = chiral_tr[key][30::9, 30::9]
+        
     print(chiral_tr_final['dens'].shape, chiral_tr_final['mean'].shape, \
           chiral_tr_final['std'].shape, chiral_tr_final['cov'].shape)
 
