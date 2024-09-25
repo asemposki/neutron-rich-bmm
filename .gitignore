@@ -22,6 +22,9 @@ FRG_Inclusion.ipynb
 *.dat
 notebooks/Plots/
 notebooks/More_Plots/
+notebooks/BMM_GP_NSM_Messy.ipynb
+notebooks/BMM_GP-Matern.ipynb
+notebooks/BMM_GP_NSM-Matern.ipynb
 
 # IDE specifics
 .idea/

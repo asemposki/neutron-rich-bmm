@@ -10,7 +10,6 @@ from pqcd_reworked import PQCD
 
 # global constants
 n0 = 0.164
-    
 
 # function for obtaining training data for GP implementation
 def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
@@ -127,9 +126,9 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
         chiral_tr_final = {}
         for key,i in chiral_tr.items():
             if chiral_tr[key].ndim == 1:
-                chiral_tr_final[key] = chiral_tr[key][40::30] 
+                chiral_tr_final[key] = chiral_tr[key][40::30] #[40::30] 
             elif chiral_tr[key].ndim == 2:
-                chiral_tr_final[key] = chiral_tr[key][40::30, 40::30]
+                chiral_tr_final[key] = chiral_tr[key][40::30, 40::30] #[40::30, 40::30]
 
     elif matter == 'PNM':
         chiral_tr_final = {}
@@ -161,9 +160,9 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
     pqcd_tr_final = {}
     for key,i in pqcd_tr.items():
         if pqcd_tr[key].ndim == 1:
-            pqcd_tr_final[key] = pqcd_tr[key][::50]  # 50 before
+            pqcd_tr_final[key] = pqcd_tr[key][::50] #[::30] for adding more points for Matern kernel
         elif pqcd_tr[key].ndim == 2:
-            pqcd_tr_final[key] = pqcd_tr[key][::50, ::50]#[log_space_pqcd][:, log_space_pqcd]
+            pqcd_tr_final[key] = pqcd_tr[key][::50, ::50] #[::30, ::30]
 
     print(chiral_tr_final['dens'].shape, chiral_tr_final['mean'].shape, \
           chiral_tr_final['std'].shape, chiral_tr_final['cov'].shape)

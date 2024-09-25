@@ -367,6 +367,34 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
               
         elif self.prior_choice == 'uniform':
             return self.luniform_ls(ls, a, b)
+        
+        elif self.prior_choice == 'matern32_norm01':
+            if self.cutoff == 20:
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.5, 0.42) # 20n0 0.8
+
+            elif self.cutoff == 40:
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 4.0, 0.42)  # 40n0  0.95, 0.1
+            
+        elif self.prior_choice == 'matern32_norm15':
+            if self.cutoff == 20:
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.5, 0.63) # 20n0 0.8
+
+            elif self.cutoff == 40:
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 4.0, 0.63)  # 40n0  0.95, 0.1
+            
+        elif self.prior_choice == 'matern52_norm01':
+            if self.cutoff == 20:
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.5, 0.25) # 20n0 0.8
+
+            elif self.cutoff == 40:
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.4, 0.25)  # 40n0  0.95, 0.1
+            
+        elif self.prior_choice == 'matern52_norm15':
+            if self.cutoff == 20:
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.5, 0.38) # 20n0 0.8
+
+            elif self.cutoff == 40:
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.4, 0.38)  # 40n0  0.95, 0.1
     
     def log_prior_ls_gradient(self, theta, *args):
         
@@ -419,7 +447,51 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                    
         elif self.prior_choice == 'uniform':
             return self.luniform_ls(ls, a, b)
-  
+        
+        elif self.prior_choice == 'matern32_norm01':
+            # function derivative
+            def trunc_deriv_matern(ls):
+                if self.cutoff == 20:
+                    trunc_matern = stats.norm.logpdf(ls, 2.5, 0.42)
+                elif self.cutoff == 40:
+                    trunc_matern = stats.norm.logpdf(ls, 4.0, 0.42)
+                return trunc_matern
+            deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
+            return deriv_truncnorm_matern(ls) + self.luniform_ls(ls, a, b)
+        
+        elif self.prior_choice == 'matern32_norm15':
+            # function derivative
+            def trunc_deriv_matern(ls):
+                if self.cutoff == 20:
+                    trunc_matern = stats.norm.logpdf(ls, 2.5, 0.63)
+                elif self.cutoff == 40:
+                    trunc_matern = stats.norm.logpdf(ls, 4.0, 0.63)
+                return trunc_matern
+            deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
+            return deriv_truncnorm_matern(ls) + self.luniform_ls(ls, a, b)
+        
+        elif self.prior_choice == 'matern52_norm01':
+            # function derivative
+            def trunc_deriv_matern(ls):
+                if self.cutoff == 20:
+                    trunc_matern = stats.norm.logpdf(ls, 1.5, 0.25)
+                elif self.cutoff == 40:
+                    trunc_matern = stats.norm.logpdf(ls, 2.4, 0.25)
+                return trunc_matern
+            deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
+            return deriv_truncnorm_matern(ls) + self.luniform_ls(ls, a, b)
+        
+        elif self.prior_choice == 'matern52_norm15':
+            # function derivative
+            def trunc_deriv_matern(ls):
+                if self.cutoff == 20:
+                    trunc_matern = stats.norm.logpdf(ls, 1.5, 0.38)
+                elif self.cutoff == 40:
+                    trunc_matern = stats.norm.logpdf(ls, 2.4, 0.38)
+                return trunc_matern
+            deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
+            return deriv_truncnorm_matern(ls) + self.luniform_ls(ls, a, b)
+   
     
     # define the prior for the lengthscale (truncated normal)
     def log_prior_sig(self, theta, *args):
