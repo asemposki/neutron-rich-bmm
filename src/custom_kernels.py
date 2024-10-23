@@ -38,7 +38,7 @@ class Changepoint(Kernel):
         return None
     
     # call the function, see what happens
-    def __call__(self, X, Y=None, eval_gradient=True):
+    def __call__(self, X, Y=None, eval_gradient=False):
         
         # check the dimensions
         X = np.atleast_2d(X)
@@ -57,8 +57,10 @@ class Changepoint(Kernel):
         self.K2 = (C(constant_value=self.cbar2, constant_value_bounds='fixed') \
                    * RBF(length_scale=self.ls2, length_scale_bounds='fixed'))(X,Y)
         
+        self.K3 = C(constant_value=0.0, constant_value_bounds='fixed')(X,Y)
+        
         # theta function algorithm (should be impervious to X=Y or not)
-        # heavisides here
+        # heavisides here??
         for i in range(len(X)):
             for j in range(len(Y)):
                 if X[i,0] < self.changepoint and Y[j,0] < self.changepoint:  # very stringent, should be working
@@ -66,9 +68,9 @@ class Changepoint(Kernel):
                 elif X[i,0] > self.changepoint and Y[j,0] > self.changepoint:
                     K[i,j] = self.K2[i,j]
                 else: 
-                    K[i,j] = 0.0
+                    K[i,j] = self.K3[i,j]
 
-        print(K)
+        #print('From the kernel code: ', K)
                                         
         # only works if X = Y (which I think is fine for us?) --> check this really carefully!
         if eval_gradient:
@@ -79,8 +81,11 @@ class Changepoint(Kernel):
             # calculate with changepoints involved here
             grad_ls1_cp = np.where(X[:, 0] < self.changepoint, grad_ls1, 0)
             grad_ls2_cp = np.where(X[:, 0] >= self.changepoint, grad_ls2, 0)
+            
+            # store the gradient
+            grad_total = np.dstack((grad_ls1_cp, grad_ls2_cp))
 
-            return K, np.dstack((grad_ls1_cp, grad_ls2_cp))
+            return K, grad_total
         
         return K
 
