@@ -1,0 +1,93 @@
+# import external dependences
+import math
+import warnings
+import numpy as np
+import numdifftools as ndt
+from scipy.spatial.distance import cdist, pdist, squareform
+
+from sklearn.utils import check_random_state
+from sklearn.gaussian_process.kernels import Kernel, RBF
+from sklearn.gaussian_process.kernels import ConstantKernel as C
+
+# set up a wrapper for sklearn kernel class
+class Changepoint(Kernel):
+    
+    r'''
+    Designs a non-stationary changepoint kernel that inherits 
+    from the sklearn RBF Kernel class.
+    
+    The kernel is given by:
+    .. math::
+        k(x_i, x_j) = (1 - \\sigma(x_i)) * K1(x_i,x_j) * 
+                      (1 - \\sigma(x_j)) + \\sigma(x_i) * K2(x_i,x_j) 
+                      * \\sigma(x_j)
+
+    where K1 is the first kernel and K2 is the second kernel, with the
+    changepoint defined by the sigmoid function.
+    '''
+    
+    # for now can input the choices, but later will need optimizing
+    def __init__(self, ls1, ls2, cbar1, cbar2, width, changepoint):
+        self.ls1 = ls1
+        self.ls2 = ls2
+        self.cbar1 = cbar1
+        self.cbar2 = cbar2
+        self.width = width
+        self.changepoint = changepoint  ### all of this checks out
+        
+        return None
+    
+    # call the function, see what happens
+    def __call__(self, X, Y=None, eval_gradient=True):
+        
+        # check the dimensions
+        X = np.atleast_2d(X)
+        
+        # this should work for all kernels (not just stationary)
+        if Y is None:
+            Y = X
+        
+        # initialize the K kernel matrix (len(tr_data), len(tr_data))
+        K = np.zeros([len(X), len(Y)])
+        
+        # assign the stationary kernels (chiral and pQCD)
+        self.K1 = (C(constant_value=self.cbar1, constant_value_bounds='fixed') \
+                   * RBF(length_scale=self.ls1, length_scale_bounds='fixed'))(X,Y)
+        
+        self.K2 = (C(constant_value=self.cbar2, constant_value_bounds='fixed') \
+                   * RBF(length_scale=self.ls2, length_scale_bounds='fixed'))(X,Y)
+        
+        # theta function algorithm (should be impervious to X=Y or not)
+        # heavisides here
+        for i in range(len(X)):
+            for j in range(len(Y)):
+                if X[i,0] < self.changepoint and Y[j,0] < self.changepoint:  # very stringent, should be working
+                    K[i,j] = self.K1[i,j]
+                elif X[i,0] > self.changepoint and Y[j,0] > self.changepoint:
+                    K[i,j] = self.K2[i,j]
+                else: 
+                    K[i,j] = 0.0
+
+        print(K)
+                                        
+        # only works if X = Y (which I think is fine for us?) --> check this really carefully!
+        if eval_gradient:
+
+            grad_ls1 = -self.K1 * (np.square(X[:, np.newaxis] - X[np.newaxis, :]) / (2 * self.ls1**3))
+            grad_ls2 = -self.K2 * (np.square(X[:, np.newaxis] - X[np.newaxis, :]) / (2 * self.ls2**3))
+
+            # calculate with changepoints involved here
+            grad_ls1_cp = np.where(X[:, 0] < self.changepoint, grad_ls1, 0)
+            grad_ls2_cp = np.where(X[:, 0] >= self.changepoint, grad_ls2, 0)
+
+            return K, np.dstack((grad_ls1_cp, grad_ls2_cp))
+        
+        return K
+
+    # diagonal function needed for base class ---> this one could be wrong!
+    def diag(self, X):
+        return np.ones(X.shape[0])
+
+    # stationary function needed for base class
+    def is_stationary(self):
+        return False

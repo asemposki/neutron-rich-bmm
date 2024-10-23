@@ -1,8 +1,7 @@
 import numpy as np
 
-
 # create a routine for the TOV sequence
-def tov_data(edens_full, pres_dict, save=False):
+def tov_data(edens_full, pres_dict, save=False, filepath=None):
 
     # number of samples
     samples = len(pres_dict['samples'].T)
@@ -30,7 +29,7 @@ def tov_data(edens_full, pres_dict, save=False):
 
     # save the result if desired
     if save is True:
-        np.savez("../../../FASTAR/TOV/Alexandra_TOV/eos_tov_true.npz", density=dens_tov, \
+        np.savez(filepath, density=dens_tov, \
                 edens=edens_tov, pres=pres_tov, cs2=cs2_tov)
     else:
         print('Data not saved.')

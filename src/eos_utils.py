@@ -458,8 +458,12 @@ def cs2_routine(gp_dict, sat_cut=None, plot=True, save_data=False):
     # set up the samples
     if gp_dict['samples'] is not None and gp_dict['true'] is None:
         pres_samples = gp_dict['samples']
+        sampling = True
     elif gp_dict['true'] is not None and gp_dict['samples'] is None:
         pres_samples = gp_dict['true']
+        sampling = True
+    elif gp_dict['true'] is None and gp_dict['samples'] is None:
+        sampling = False
     else:
         raise ValueError('Too many variables to assign.')
     
@@ -474,15 +478,22 @@ def cs2_routine(gp_dict, sat_cut=None, plot=True, save_data=False):
     gp_cs2_convert_arr = convert_interp(gp_dens)
     
     # convert samples over
-    pres_samples_unscaled = [pres_samples[:,i]*gp_cs2_convert_arr \
-                             for i in range(len(np.asarray(pres_samples).T))]
-    
-    pres_dict = {
-        'dens': gp_dens[sat_cut:],
-        'mean': gp_mean[sat_cut:]*gp_cs2_convert_arr[sat_cut:],
-        'std_dev': gp_std[sat_cut:]*gp_cs2_convert_arr[sat_cut:],
-        'samples': np.asarray(pres_samples_unscaled)[:, sat_cut:].T
-    }
+    if sampling is True:
+        pres_samples_unscaled = [pres_samples[:,i]*gp_cs2_convert_arr \
+                                 for i in range(len(np.asarray(pres_samples).T))]
+
+        pres_dict = {
+            'dens': gp_dens[sat_cut:],
+            'mean': gp_mean[sat_cut:]*gp_cs2_convert_arr[sat_cut:],
+            'std_dev': gp_std[sat_cut:]*gp_cs2_convert_arr[sat_cut:],
+            'samples': np.asarray(pres_samples_unscaled)[:, sat_cut:].T
+        }
+    else:
+        pres_dict = {
+            'dens': gp_dens[sat_cut:],
+            'mean': gp_mean[sat_cut:]*gp_cs2_convert_arr[sat_cut:],
+            'std_dev': gp_std[sat_cut:]*gp_cs2_convert_arr[sat_cut:]
+        }
     
     # energy density bounds (not changing)
     en_0 = 43656.4556069574
@@ -490,30 +501,45 @@ def cs2_routine(gp_dict, sat_cut=None, plot=True, save_data=False):
     en_0_upper = 43797.873283570414
 
     # for draws, try new anchor point function
-    pqcd_class = PQCD(X=1, Nf=3)
-    edens_0_draw_arr = pqcd_class.anchor_point_edens(pres_dict['samples'], \
-                                                     anchor=gp_dens[-1])
+    if sampling is True:
+        pqcd_class = PQCD(X=1, Nf=3)
+        edens_0_draw_arr = pqcd_class.anchor_point_edens(pres_dict['samples'], \
+                                                         anchor=gp_dens[-1])
 
-    # make dict of values to send to speed of sound code
-    edens_dict = {
-        'mean': en_0, 
-        'lower': en_0_lower,
-        'upper': en_0_upper,
-        'samples': edens_0_draw_arr
-    }
+        # make dict of values to send to speed of sound code
+        edens_dict = {
+            'mean': en_0, 
+            'lower': en_0_lower,
+            'upper': en_0_upper,
+            'samples': edens_0_draw_arr
+        }
     
-    # call speed of sound function (sampled = True automatically runs the integration downwards)
-    cs2_sampled, edens_full = speed_of_sound(gp_dens[sat_cut:], pres_dict, \
-                                         edens_dict, sat=False, sampled=True)
+        # call speed of sound function (sampled = True automatically runs the integration downwards)
+        cs2_sampled, edens_full = speed_of_sound(gp_dens[sat_cut:], pres_dict, \
+                                             edens_dict, sat=False, sampled=True)
+        
+    else:
+        # make dict of values to send to speed of sound code
+        edens_dict = {
+            'mean': en_0, 
+            'lower': en_0_lower,
+            'upper': en_0_upper
+        }
     
-    # get mean and std_dev for edens to plot P(eps)
-    edens_mean = np.nanmean(edens_full, axis=0)
-    edens_std = np.nanstd(edens_full, axis=0)
-    
+        # call speed of sound function
+        _, cs2_sampled, _, edens_full, _ = speed_of_sound(gp_dens[sat_cut:], pres_dict, \
+                                             edens_dict, sat=False, sampled=False, integrate='backward')
+        
+    if sampling is True:
+        # get mean and std_dev for edens to plot P(eps)
+        edens_mean = np.nanmean(edens_full, axis=0)
+        edens_std = np.nanstd(edens_full, axis=0)
+        
     # dict entries 
-    cs2_sampled_mean = cs2_sampled['mean']
-    cs2_sampled_std = cs2_sampled['std']
-    cs2_sampled_samples = cs2_sampled['samples']
+    if sampling is True:
+        cs2_sampled_mean = cs2_sampled['mean']
+        cs2_sampled_std = cs2_sampled['std']
+        cs2_sampled_samples = cs2_sampled['samples']
     
     # plot if desired
     if plot is True:
