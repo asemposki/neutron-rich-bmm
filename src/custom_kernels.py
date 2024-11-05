@@ -27,13 +27,16 @@ class Changepoint(Kernel):
     '''
     
     # for now can input the choices, but later will need optimizing
-    def __init__(self, ls1, ls2, cbar1, cbar2, width, changepoint):
+    def __init__(self, ls1, ls2, cbar1, cbar2, width, changepoint, type='theta'):
         self.ls1 = ls1
         self.ls2 = ls2
         self.cbar1 = cbar1
         self.cbar2 = cbar2
         self.width = width
         self.changepoint = changepoint  ### all of this checks out
+
+        # select type of kernel
+        self.type = type
         
         return None
     
@@ -59,21 +62,36 @@ class Changepoint(Kernel):
         
         self.K3 = C(constant_value=0.0, constant_value_bounds='fixed')(X,Y)
         
-        # theta function algorithm (should be impervious to X=Y or not)
-        # heavisides here??
-        for i in range(len(X)):
-            for j in range(len(Y)):
-                if X[i,0] < self.changepoint and Y[j,0] < self.changepoint:  # very stringent, should be working
-                    K[i,j] = self.K1[i,j]
-                elif X[i,0] > self.changepoint and Y[j,0] > self.changepoint:
-                    K[i,j] = self.K2[i,j]
-                else: 
-                    K[i,j] = self.K3[i,j]
+        # if statement for cases
+        if self.type == 'theta':
+        
+            # make heavisides here
+            for i in range(len(X)):
+                for j in range(len(Y)):
+                    if X[i,0] < self.changepoint and Y[j,0] < self.changepoint:  # very stringent, should be working
+                        K[i,j] = self.K1[i,j]
+                    elif X[i,0] > self.changepoint and Y[j,0] > self.changepoint:
+                        K[i,j] = self.K2[i,j]
+                    else: 
+                        K[i,j] = self.K3[i,j]
+
+        elif self.type == 'sigmoid':
+
+            # sigmoid bilinear function
+            def sigmoid(dens, x0, k):
+                return 1.0 / (1.0 + np.exp(-k*(dens-x0)))
+            
+            # loop for each point
+            for i in range(len(X)):
+                for j in range(len(Y)):
+                    K[i,j] = np.outer(1.0 - sigmoid(X[i], self.changepoint, self.width), 1.0 - sigmoid(Y[j], \
+                             self.changepoint, self.width)) * self.K1[i,j] + np.outer(sigmoid(X[i], \
+                             self.changepoint, self.width), sigmoid(Y[i], self.changepoint, self.width)) * self.K2[i,j]
 
         #print('From the kernel code: ', K)
                                         
         # only works if X = Y (which I think is fine for us?) --> check this really carefully!
-        if eval_gradient:
+        if eval_gradient: # still need to do this for each kernel used (ugh)
 
             grad_ls1 = -self.K1 * (np.square(X[:, np.newaxis] - X[np.newaxis, :]) / (2 * self.ls1**3))
             grad_ls2 = -self.K2 * (np.square(X[:, np.newaxis] - X[np.newaxis, :]) / (2 * self.ls2**3))
