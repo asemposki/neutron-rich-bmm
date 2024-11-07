@@ -230,13 +230,14 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             kernel = self.kernel_.clone_with_theta(theta)
         else:
             kernel = self.kernel_
+            #print('Kernel setting: ', kernel)  # need to figure out how to show parameters...
             kernel.theta = theta
 
         if eval_gradient:
-            K, K_gradient = kernel(self.X_train_, eval_gradient=True)
+            K, K_gradient = kernel(self.X_train_, eval_gradient=True)  # already evaluated here!
             self.K_copy = K
         else:
-            K = kernel(self.X_train_)
+            K = kernel(self.X_train_, eval_gradient=False)
             self.K_copy = K
 
         # Alg. 2.1, page 19, line 2 -> L = cholesky(K + sigma^2 I)
@@ -244,6 +245,8 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         # Handle 2d noise:
         if np.iterable(self.alpha) and self.alpha.ndim == 2:
             K += self.alpha
+            print('K with alpha, K shape: ', K, K.shape)
+            print('Eigenvalues: ', np.linalg.eig(K)[0])
         else:
             K[np.diag_indices_from(K)] += self.alpha
         try:

@@ -27,21 +27,20 @@ class Changepoint(Kernel):
     '''
     
     # for now can input the choices, but later will need optimizing
-    def __init__(self, ls1, ls2, cbar1, cbar2, width, changepoint, type='theta'):
+    def __init__(self, ls1, ls2, cbar1, cbar2, width, changepoint):
         self.ls1 = ls1
         self.ls2 = ls2
         self.cbar1 = cbar1
         self.cbar2 = cbar2
         self.width = width
-        self.changepoint = changepoint  ### all of this checks out
-
-        # select type of kernel
-        self.type = type
+        self.changepoint = changepoint 
+        
+        self.type = 'theta'
         
         return None
     
     # call the function, see what happens
-    def __call__(self, X, Y=None, eval_gradient=False):
+    def __call__(self, X, Y=None, eval_gradient=False):  # eval_gradient = True for most cases, not yet for us
         
         # check the dimensions
         X = np.atleast_2d(X)
@@ -49,7 +48,7 @@ class Changepoint(Kernel):
         # this should work for all kernels (not just stationary)
         if Y is None:
             Y = X
-        
+            
         # initialize the K kernel matrix (len(tr_data), len(tr_data))
         K = np.zeros([len(X), len(Y)])
         
@@ -82,13 +81,11 @@ class Changepoint(Kernel):
                 return 1.0 / (1.0 + np.exp(-k*(dens-x0)))
             
             # loop for each point
-            for i in range(len(X)):
-                for j in range(len(Y)):
-                    K[i,j] = np.outer(1.0 - sigmoid(X[i], self.changepoint, self.width), 1.0 - sigmoid(Y[j], \
-                             self.changepoint, self.width)) * self.K1[i,j] + np.outer(sigmoid(X[i], \
-                             self.changepoint, self.width), sigmoid(Y[i], self.changepoint, self.width)) * self.K2[i,j]
+            K = np.outer((np.ones(len(X)) - sigmoid(X, self.changepoint, self.width).T), \
+                              (np.ones(len(Y)) - sigmoid(Y, self.changepoint, self.width).T)) * self.K1 + np.outer(sigmoid(X, \
+                             self.changepoint, self.width).T, sigmoid(Y, self.changepoint, self.width).T) * self.K2
 
-        #print('From the kernel code: ', K)
+        print('From the kernel code: ', K)
                                         
         # only works if X = Y (which I think is fine for us?) --> check this really carefully!
         if eval_gradient: # still need to do this for each kernel used (ugh)
