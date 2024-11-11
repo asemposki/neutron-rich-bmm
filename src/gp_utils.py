@@ -126,7 +126,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 else:
                     return -self.log_marginal_likelihood(theta, clone_kernel=False)
                 
-            # First optimize starting from theta specified in kernel
+            # First optimize starting from theta specified in kernel   ### MAKE SURE WE HAVE THIS!!! ###
             optima = [
                 (
                     self._constrained_optimization(
@@ -247,6 +247,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             K += self.alpha
             print('K with alpha, K shape: ', K, K.shape)
             print('Eigenvalues: ', np.linalg.eig(K)[0])
+            self.Kalph = K
         else:
             K[np.diag_indices_from(K)] += self.alpha
         try:
