@@ -19,7 +19,7 @@ GPR_CHOLESKY_LOWER = True
 class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
 
     # training function ---> add hyperparameter constraints here
-    def fit(self, X, y, priors=True, prior_choice='truncnorm', cutoff=40):
+    def fit(self, X, y, priors=True, prior_choice='truncnorm', cutoff=40, max_iter=None):
         """Fit Gaussian process regression model.
 
         Parameters
@@ -130,7 +130,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             optima = [
                 (
                     self._constrained_optimization(
-                        obj_func, self.kernel_.theta, self.kernel_.bounds
+                        obj_func, self.kernel_.theta, self.kernel_.bounds, max_iter=max_iter
                     )
                 )
             ]
@@ -147,7 +147,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 for iteration in range(self.n_restarts_optimizer):
                     theta_initial = self._rng.uniform(bounds[:, 0], bounds[:, 1])
                     optima.append(
-                        self._constrained_optimization(obj_func, theta_initial, bounds)
+                        self._constrained_optimization(obj_func, theta_initial, bounds, max_iter=max_iter)
                     )
             # Select result from run with minimal (negative) log-marginal
             # likelihood
@@ -230,12 +230,13 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             kernel = self.kernel_.clone_with_theta(theta)
         else:
             kernel = self.kernel_
-            #print('Kernel setting: ', kernel)  # need to figure out how to show parameters...
             kernel.theta = theta
+            #print('Theta parameters to be optimized: ', kernel.theta)
 
         if eval_gradient:
             K, K_gradient = kernel(self.X_train_, eval_gradient=True)  # already evaluated here!
             self.K_copy = K
+            self.K_copy_gradient = K_gradient
         else:
             K = kernel(self.X_train_, eval_gradient=False)
             self.K_copy = K
@@ -245,8 +246,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         # Handle 2d noise:
         if np.iterable(self.alpha) and self.alpha.ndim == 2:
             K += self.alpha
-            print('K with alpha, K shape: ', K, K.shape)
-            print('Eigenvalues: ', np.linalg.eig(K)[0])
+            #print('K with alpha, K shape: ', K, K.shape)
             self.Kalph = K
         else:
             K[np.diag_indices_from(K)] += self.alpha
@@ -585,7 +585,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             return -np.inf
     
     
-    def _constrained_optimization(self, obj_func, initial_theta, bounds):
+    def _constrained_optimization(self, obj_func, initial_theta, bounds, max_iter):  # added max_iter
         if self.optimizer == "fmin_l_bfgs_b":
             opt_res = scipy.optimize.minimize(
                 obj_func,
@@ -594,8 +594,9 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 jac=True,
                 bounds=bounds,
                 tol=1e-12,
+                options={'maxiter': max_iter},   # added options
             )
-            self._check_optimize_result("lbfgs", opt_res)
+            self._check_optimize_result("lbfgs", opt_res, max_iter=max_iter)  # added max_iter
             theta_opt, func_min = opt_res.x, opt_res.fun
         elif callable(self.optimizer):
             theta_opt, func_min = self.optimizer(obj_func, initial_theta, bounds=bounds)
@@ -644,9 +645,9 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 ).format(solver, result.status, result_message)
                 if extra_warning_msg is not None:
                     warning_msg += "\n" + extra_warning_msg
-                warnings.warn(warning_msg) #ConvergenceWarning, stacklevel=2)  # commenting out for now
+                warnings.warn(warning_msg) #ConvergenceWarning, stacklevel=2)  # commenting out for now (should investigate!)
             if max_iter is not None:
-                # In scipy <= 1.0.0, nit may exceed maxiter for lbfgs.
+                # In scipy <= 1.0.0, nit may exceed maxiter for lbfgs. 
                 # See https://github.com/scipy/scipy/issues/7854
                 n_iter_i = min(result.nit, max_iter)
             else:
