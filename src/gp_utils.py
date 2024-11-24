@@ -126,7 +126,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 else:
                     return -self.log_marginal_likelihood(theta, clone_kernel=False)
                 
-            # First optimize starting from theta specified in kernel   ### MAKE SURE WE HAVE THIS!!! ###
+            # First optimize starting from theta specified in kernel
             optima = [
                 (
                     self._constrained_optimization(
@@ -319,7 +319,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         if prior is True:
             log_prior_value_ls = self.log_prior_ls(theta)
             log_prior_value_sig = self.log_prior_sig(theta)
-            log_total = log_likelihood + log_prior_value_ls + log_prior_value_sig
+            log_total = log_likelihood + log_prior_value_ls + log_prior_value_sig  # cut out for changepoint for now
             log_total_gradient = log_likelihood_gradient + \
             self.log_prior_ls_gradient(theta) + self.log_prior_sig_gradient(theta)
         else:
@@ -333,13 +333,21 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         else:
             return log_likelihood
         
-    # define the prior for the lengthscale (truncated normal) ---> fix this if we can!
     def log_prior_ls(self, theta, *args):
         
-        # take in lengthscale only for this prior
-        ls = np.exp(theta[1])
-        a = np.exp(self.kernel_.bounds[1,0])
-        b = np.exp(self.kernel_.bounds[1,1])
+        if self.prior_choice == 'changepoint':
+            cp = np.exp(theta[0])  # only CP so far
+            a = np.exp(self.kernel_.bounds[0,0])
+            b = np.exp(self.kernel_.bounds[0,1])
+        else:
+            # take in lengthscale only for this prior
+            ls = np.exp(theta[1])
+            a = np.exp(self.kernel_.bounds[1,0])
+            b = np.exp(self.kernel_.bounds[1,1])
+
+        if self.prior_choice == 'changepoint':
+            if self.cutoff == 20:
+                return self.luniform_ls(cp, a, b) + stats.norm.logpdf(cp, 0.82, 0.33)  # 'broad' for now
         
         if self.prior_choice == 'truncnorm_01':
             if self.cutoff == 20:
@@ -422,10 +430,22 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
     
     def log_prior_ls_gradient(self, theta, *args):
         
-        # take in lengthscale only for this prior
-        ls = np.exp(theta[1])
-        a = np.exp(self.kernel_.bounds[1,0])
-        b = np.exp(self.kernel_.bounds[1,1])
+        if self.prior_choice == 'changepoint':
+            cp = np.exp(theta[0])
+            a = np.exp(self.kernel_.bounds[0,0])
+            b = np.exp(self.kernel_.bounds[0,1])
+        else:
+            # take in lengthscale only for this prior
+            ls = np.exp(theta[1])
+            a = np.exp(self.kernel_.bounds[1,0])
+            b = np.exp(self.kernel_.bounds[1,1])
+            
+        if self.prior_choice == 'changepoint':
+            def deriv_cp(cp):
+                if self.cutoff == 20:
+                    return stats.norm.logpdf(cp, 0.82, 0.33)
+            deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
+            return deriv_cp_norm(cp) #+ self.luniform_cp(cp, a, b)
         
         if self.prior_choice == 'truncnorm_01':
             # function derivative
@@ -436,7 +456,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                     trunc_01 = stats.norm.logpdf(ls, 0.95, 0.1)
                 return trunc_01
             deriv_truncnorm_01 = ndt.Derivative(trunc_deriv_01, step=1e-4, method='central')
-            return deriv_truncnorm_01(ls) + self.luniform_ls(ls, a, b)
+            return deriv_truncnorm_01(ls) #+ self.luniform_ls(ls, a, b)
         
         elif self.prior_choice == 'truncnorm_15':
             # function derivative
@@ -447,7 +467,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                     trunc_15 = stats.norm.logpdf(ls, 0.95, 0.15)
                 return trunc_15
             deriv_truncnorm_15 = ndt.Derivative(trunc_deriv_15, step=1e-4, method='central')
-            return deriv_truncnorm_15(ls) + self.luniform_ls(ls, a, b)
+            return deriv_truncnorm_15(ls) #+ self.luniform_ls(ls, a, b)
 
         elif self.prior_choice == 'skewnorm':
             def skew_deriv(ls):
@@ -481,7 +501,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                     trunc_matern = stats.norm.logpdf(ls, 2.42, 0.1) #(ls, 4.0, 0.42)
                 return trunc_matern
             deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
-            return deriv_truncnorm_matern(ls) + self.luniform_ls(ls, a, b)
+            return deriv_truncnorm_matern(ls) #+ self.luniform_ls(ls, a, b)
         
         elif self.prior_choice == 'matern32_norm15':
             # function derivative
@@ -492,7 +512,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                     trunc_matern = stats.norm.logpdf(ls, 2.42, 0.15) #(ls, 4.0, 0.63)
                 return trunc_matern
             deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
-            return deriv_truncnorm_matern(ls) + self.luniform_ls(ls, a, b)
+            return deriv_truncnorm_matern(ls) #+ self.luniform_ls(ls, a, b)
         
         elif self.prior_choice == 'matern52_norm01':
             # function derivative
@@ -505,7 +525,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                     #trunc_matern = stats.norm.logpdf(ls, 2.4, 0.25)
                 return trunc_matern
             deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
-            return deriv_truncnorm_matern(ls) + self.luniform_ls(ls, a, b)
+            return deriv_truncnorm_matern(ls) #+ self.luniform_ls(ls, a, b)
         
         elif self.prior_choice == 'matern52_norm15':
             # function derivative
@@ -518,7 +538,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                     trunc_matern = stats.norm.logpdf(ls, 1.65, 0.15) #1.03, 0.15)#1.65, 0.15)
                 return trunc_matern
             deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
-            return deriv_truncnorm_matern(ls) + self.luniform_ls(ls, a, b)
+            return deriv_truncnorm_matern(ls) #+ self.luniform_ls(ls, a, b)
         
         elif self.prior_choice == 'rat_norm15':
             # function derivative
@@ -529,7 +549,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                     trunc_matern = stats.norm.logpdf(ls, 0.93, 0.15)
                 return trunc_matern
             deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
-            return deriv_truncnorm_matern(ls) + self.luniform_ls(ls, a, b)
+            return deriv_truncnorm_matern(ls) #+ self.luniform_ls(ls, a, b)
         
         elif self.prior_choice == 'rat_norm01':
             # function derivative
@@ -540,7 +560,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                     trunc_matern = stats.norm.logpdf(ls, 0.93, 0.1)
                 return trunc_matern
             deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
-            return deriv_truncnorm_matern(ls) + self.luniform_ls(ls, a, b)
+            return deriv_truncnorm_matern(ls) #+ self.luniform_ls(ls, a, b)
    
     
     # define the prior for the lengthscale (truncated normal)
@@ -587,15 +607,25 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
     
     def _constrained_optimization(self, obj_func, initial_theta, bounds, max_iter):  # added max_iter
         if self.optimizer == "fmin_l_bfgs_b":
-            opt_res = scipy.optimize.minimize(
-                obj_func,
-                initial_theta,
-                method="L-BFGS-B",
-                jac=True,
-                bounds=bounds,
-                tol=1e-12,
-                options={'maxiter': max_iter},   # added options
-            )
+            if max_iter is None:
+                opt_res = scipy.optimize.minimize(
+                    obj_func,
+                    initial_theta,
+                    method="L-BFGS-B",
+                    jac=True,
+                    bounds=bounds,
+                    tol=1e-14,  # 1e-12
+                )
+            else:
+                opt_res = scipy.optimize.minimize(
+                    obj_func,
+                    initial_theta,
+                    method="L-BFGS-B",
+                    jac=True,
+                    bounds=bounds,
+                    tol=1e-14,  # 1e-12
+                    options={'maxiter': max_iter},   # added options
+                )
             self._check_optimize_result("lbfgs", opt_res, max_iter=max_iter)  # added max_iter
             theta_opt, func_min = opt_res.x, opt_res.fun
         elif callable(self.optimizer):
@@ -631,6 +661,8 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         # handle both scipy and scikit-learn solver names
         if solver == "lbfgs":
             if result.status != 0:
+                # print(max_iter)
+                # print(result.status) this prints every time so not converging ever
                 try:
                     # The message is already decoded in scipy>=1.6.0
                     result_message = result.message.decode("latin1")

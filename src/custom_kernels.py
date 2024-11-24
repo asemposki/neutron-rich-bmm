@@ -26,8 +26,8 @@ class Changepoint(Kernel):
     '''
     
     # import hyperparameter names here
-    def __init__(self, ls1, ls2, cbar1, cbar2, width=1.0, changepoint=1.0,
-                changepoint_bounds=(1e-5, 1e5), width_bounds=(1e-5, 1e5)):
+    def __init__(self, ls1, ls2, cbar1, cbar2, changepoint=1.0, changepoint_bounds=(1e-5, 1e5), 
+                 width=1.0, width_bounds=(1e-5, 1e5)):
         
         # will not touch these for now
         self.ls1 = ls1
@@ -111,18 +111,21 @@ class Changepoint(Kernel):
         elif self.type == 'sigmoid':
 
             # sigmoid bilinear function
-            def sigmoid(x0, k, dens):
+            def sigmoid(dens, x0, k):
                 return 1.0 / (1.0 + np.exp(-(dens-x0)/k))
             
-            # sigmoid derivative function
-            def sig_grad(dens, x0, k):
-                return - (1.0 / k) * (1.0 + np.exp(-(dens-x0)/k))**(-2.0)
+            # sigmoid deriv for cp and width
+            def sig_grad(dens, x0, k, deriv='cp'):
+                if deriv == 'cp':
+                    return -(np.exp(-(dens-x0)/k)/k) * (1.0 + np.exp(-(dens-x0)/k))**(-2.0)
+                elif deriv == 'w':
+                    return -(np.exp(-(dens-x0)/k)) * (dens-x0)/k**2.0 * (1.0 + np.exp(-(dens-x0)/k))**(-2.0)
             
-            # loop for each point
-            self.K = np.outer((np.ones(len(X)) - sigmoid(self.changepoint, self.width, X).T), \
-                         (np.ones(len(Y)) - sigmoid(self.changepoint, self.width, Y).T)) * self.K1 + 
-                          np.outer(sigmoid(self.changepoint,self.width, X).T, \                                                   
-                          sigmoid(self.changepoint, self.width, Y).T) * self.K2
+            # define kernel matrix
+            self.K = np.outer((np.ones(len(X)) - sigmoid(X, self.changepoint, self.width).T), \
+                              (np.ones(len(Y)) - sigmoid(Y, self.changepoint, self.width).T)) \
+            * self.K1 + np.outer(sigmoid(X, self.changepoint,self.width).T, \
+                                 sigmoid(Y, self.changepoint, self.width).T) * self.K2
                                         
         # only for when optimization of hyperparameters is needed
         if eval_gradient:  # for the single hyperparameter now that is varying (changepoint)
@@ -130,21 +133,41 @@ class Changepoint(Kernel):
             if self.hyperparameter_changepoint.fixed:
                 # hyperparameter changepoint kept fixed (no gradient)
                 return self.K, np.empty((X.shape[0], X.shape[0], 0)) # not sure of this
+            
+            # check if this is correct or if it should be log of params somehow encoded (YES)
+            elif not self.anisotropic:
                 
-            elif not self.anisotropic or length_scale.shape[0] == 1:
                 if self.type == 'sigmoid':
-                    def K_sig_grad_cp(cp, *args):
-                        sig_grad = ndt.Derivative(sigmoid, )
-                        return None
-#                     K_gradient = (np.outer((-sig_grad(X, self.changepoint, self.width).T), \
-#                                   (np.ones(len(Y)) - sigmoid(Y, self.changepoint, self.width).T)) 
-#                                   * self.K1 + np.outer((np.ones(len(X)) - sigmoid(X, self.changepoint, self.width).T), \
-#                                   (-sig_grad(Y, self.changepoint, self.width).T)) * self.K1 
-#                                   + np.outer(sig_grad(X, self.changepoint, self.width).T, 
-#                                    sigmoid(Y, self.changepoint, self.width).T) * self.K2 + 
-#                                   np.outer(sigmoid(X, self.changepoint, self.width).T, 
-#                                    sig_grad(Y, self.changepoint, self.width).T) * self.K2)[:,:,np.newaxis]
-                    return self.K, K_gradient
+                    
+                    if not self.hyperparameter_changepoint.fixed:
+                        K_gradient_cp = (self.changepoint*(np.outer((-sig_grad(X, self.changepoint, self.width).T), \
+                                            (np.ones(len(Y)) - sigmoid(Y, self.changepoint, self.width).T)) \
+                                    * self.K1 + np.outer((np.ones(len(X)) - \
+                                                            sigmoid(X, self.changepoint, self.width).T), \
+                                                        -sig_grad(Y, self.changepoint, self.width).T) \
+                                    * self.K1 + np.outer(sig_grad(X, self.changepoint,self.width).T,  \
+                                                        sigmoid(self.changepoint, self.width, Y).T) \
+                                    * self.K2 + np.outer(sigmoid(X, self.changepoint,self.width).T, \
+                                                        sig_grad(Y, self.changepoint, self.width).T) \
+                                    * self.K2))[:,:,np.newaxis]
+                    else:
+                        K_gradient_cp = np.empty((self.K.shape[0], self.K.shape[1], 0))  # no gradient
+                    
+                    if not self.hyperparameter_width.fixed:
+                        K_gradient_w = (self.width*(np.outer((-sig_grad(X, self.changepoint, self.width, 'w').T), \
+                                            (np.ones(len(Y)) - sigmoid(Y, self.changepoint, self.width).T)) \
+                                    * self.K1 + np.outer((np.ones(len(X)) - \
+                                                            sigmoid(X, self.changepoint, self.width).T), \
+                                                        -sig_grad(Y, self.changepoint, self.width, 'w').T) \
+                                    * self.K1 + np.outer(sig_grad(X, self.changepoint, self.width, 'w').T,  \
+                                                        sigmoid(self.changepoint, self.width, Y).T) \
+                                    * self.K2 + np.outer(sigmoid(X, self.changepoint,self.width).T, \
+                                                        sig_grad(Y, self.changepoint, self.width, 'w').T) \
+                                    * self.K2))[:,:,np.newaxis]
+                    else:
+                        K_gradient_w = np.empty((self.K.shape[0], self.K.shape[1], 0))   # no gradient
+                    
+                 #   return self.K, K_gradient
                 elif self.type == 'theta':
                     K_gradient = None
                     raise ValueError('''The gradient cannot be evaluated for the Heaviside changepoint kernel.'''
@@ -152,6 +175,9 @@ class Changepoint(Kernel):
                 
             elif self.anisotropic:
                 raise ValueError('The kernel has not been implemented for anisotropic cases.')
+            
+            # full gradient return
+            return self.K, np.dstack((K_gradient_cp, K_gradient_w))  # is this ordered correctly? how do we know? check?
                     
         else:
             return self.K  # no gradient returned
@@ -171,7 +197,7 @@ class Changepoint(Kernel):
                 self.__class__.__name__,
                 ", ".join(map("{0:.3g}".format, self.changepoint)),
             )
-        else:  # isotropic
-            return "{0}(changepoint={1:.3g})".format(
-                self.__class__.__name__, np.ravel(self.changepoint)[0]
+        else:  # isotropic  (does this work?) NOPE, WHY NOT
+            return "{0}(changepoint={1:.3g}, width={2:.3g})".format(
+                self.__class__.__name__, self.changepoint, self.width
             )
