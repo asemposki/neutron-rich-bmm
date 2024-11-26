@@ -317,30 +317,126 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             
         ### ---- adding the log prior in a proxy lml expression ---- ###
         if prior is True:
-            log_prior_value_ls = self.log_prior_ls(theta)
-            log_prior_value_sig = self.log_prior_sig(theta)
-            log_total = log_likelihood + log_prior_value_ls + log_prior_value_sig  # cut out for changepoint for now
-            log_total_gradient = log_likelihood_gradient + \
-            self.log_prior_ls_gradient(theta) + self.log_prior_sig_gradient(theta)
+            
+            # non-stationary kernel format
+            if self.prior_choice == 'changepoint':
+                cp_bounds = True
+                w_bounds = True
+                
+                # make dict of values for this part to tell code which is optimized
+                if self.kernel_.width_bounds == 'fixed':
+                    w_bounds = False
+                if self.kernel_.changepoint_bounds == 'fixed':
+                    cp_bounds = False
+                arg_dict = {
+                    'cp_opt': cp_bounds,
+                    'w_opt': w_bounds 
+                }
+
+                # set up the LML or MAP estimation procedure for this kernel
+                log_prior, log_prior_gradient = self.log_prior_cp(theta, **arg_dict)
+                log_total = log_likelihood + log_prior
+                log_total_gradient = log_likelihood_gradient + log_prior_gradient
+            
+            # any stationary kernel choice
+            else:
+                log_prior_value_ls = self.log_prior_ls(theta)
+                log_prior_value_sig = self.log_prior_sig(theta)
+                log_total = log_likelihood + log_prior_value_ls + log_prior_value_sig
+                log_total_gradient = log_likelihood_gradient + \
+                self.log_prior_ls_gradient(theta) + self.log_prior_sig_gradient(theta)
         else:
             log_total = log_likelihood
-          #  log_total_gradient = log_likelihood_gradient   # issue with this guy not working when no params to optimize
 
-        if eval_gradient and prior is True:
+            if eval_gradient is True:
+                log_total_gradient = log_likelihood_gradient
+
+        # return results from LML or MAP estimation
+        if eval_gradient is True and prior is True:
             return log_total, log_total_gradient
-        elif eval_gradient and prior is False:
-            return log_total, log_likelihood_gradient
+        elif eval_gradient is True and prior is False:
+            return log_likelihood, log_likelihood_gradient
         else:
             return log_likelihood
         
-    def log_prior_ls(self, theta, *args):
+    # this function produces both log prior(s) and log prior gradient(s)
+    def log_prior_cp(self, theta, **kwargs):
+
+        # include both changepoint and width options (bools in dict)
+        cp_opt = kwargs['cp_opt']
+        w_opt = kwargs['w_opt']
+
+        # gradient functions
+        if self.cutoff == 20:
+            def deriv_cp(cp):
+                return stats.norm.logpdf(cp, 0.98, 0.33)
+            def deriv_w(w):
+                return stats.norm.logpdf(w, 0.16, 0.155)
+            
+        # optimizing both parameters
+        if cp_opt is True and w_opt is True:
+            cp = np.exp(theta[0])
+            w = np.exp(theta[1])
+            
+            cpa = np.exp(self.kernel_.bounds[0,0])
+            cpb = np.exp(self.kernel_.bounds[0,1])
+            wa = np.exp(self.kernel_.bounds[1,0])
+            wb = np.exp(self.kernel_.bounds[1,1])
+
+            if self.cutoff == 20:
+                deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
+                deriv_w_norm = ndt.Derivative(deriv_w, step=1e-4, method='central')
+                
+                # construct the prior and gradient
+                log_prior = self.luniform_ls(cp, cpa, cpb) + \
+                    stats.norm.logpdf(cp, 0.98, 0.33) + \
+                        self.luniform_ls(w, wa, wb) + \
+                    stats.norm.logpdf(w, 0.16, 0.155)
+                log_gradient = deriv_cp_norm(cp) + deriv_w_norm(w)
+                
+                return log_prior, log_gradient
+
+        # optimizing width only
+        elif cp_opt is not True and w_opt is True:
+            w = np.exp(theta[0])
+            wa = np.exp(self.kernel_.bounds[0,0])
+            wb = np.exp(self.kernel_.bounds[0,1])
+
+            if self.cutoff == 20:
+                deriv_w_norm = ndt.Derivative(deriv_w, step=1e-4, method='central')
+
+                # construct the prior and gradient
+                log_prior = self.luniform_ls(w, wa, wb) + \
+                    stats.norm.logpdf(w, 0.16, 0.155)
+                log_gradient = deriv_w_norm(w)
+                
+                return log_prior, log_gradient
+
+        # optimizing changepoint only
+        elif cp_opt is True and w_opt is not True:
+            cp = np.exp(theta[0])
+            cpa = np.exp(self.kernel_.bounds[0,0])
+            cpb = np.exp(self.kernel_.bounds[0,1])
+
+            if self.cutoff == 20:
+                deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
+
+                # construct the prior and gradient
+                log_prior = self.luniform_ls(cp, cpa, cpb) + \
+                    stats.norm.logpdf(cp, 0.98, 0.33)
+                log_gradient = deriv_cp_norm(cp)
+
+                return log_prior, log_gradient
+            
+
+    def log_prior_ls(self, theta, **kwargs):
         
         if self.prior_choice == 'changepoint':
             cp = np.exp(theta[0])  # only CP so far
             a = np.exp(self.kernel_.bounds[0,0])
             b = np.exp(self.kernel_.bounds[0,1])
         else:
-            # take in lengthscale only for this prior
+        #take in lengthscale only for this prior
             ls = np.exp(theta[1])
             a = np.exp(self.kernel_.bounds[1,0])
             b = np.exp(self.kernel_.bounds[1,1])
@@ -428,24 +524,12 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             elif self.cutoff == 40:
                 return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.93, 0.1)
     
-    def log_prior_ls_gradient(self, theta, *args):
-        
-        if self.prior_choice == 'changepoint':
-            cp = np.exp(theta[0])
-            a = np.exp(self.kernel_.bounds[0,0])
-            b = np.exp(self.kernel_.bounds[0,1])
-        else:
-            # take in lengthscale only for this prior
-            ls = np.exp(theta[1])
-            a = np.exp(self.kernel_.bounds[1,0])
-            b = np.exp(self.kernel_.bounds[1,1])
-            
-        if self.prior_choice == 'changepoint':
-            def deriv_cp(cp):
-                if self.cutoff == 20:
-                    return stats.norm.logpdf(cp, 0.82, 0.33)
-            deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
-            return deriv_cp_norm(cp) #+ self.luniform_cp(cp, a, b)
+    def log_prior_ls_gradient(self, theta, **kwargs):
+
+        # take in lengthscale only for this prior
+        ls = np.exp(theta[1])
+        a = np.exp(self.kernel_.bounds[1,0])
+        b = np.exp(self.kernel_.bounds[1,1])
         
         if self.prior_choice == 'truncnorm_01':
             # function derivative
@@ -597,7 +681,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         return deriv_trunc(sig) + self.luniform_ls(sig, a, b)
     
     
-    # log uniform prior, bounded
+    # log uniform prior, bounded (generalize naming scheme)
     def luniform_ls(self, ls, a, b):
         if ls > a and ls < b:
             return 0.0
@@ -614,7 +698,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                     method="L-BFGS-B",
                     jac=True,
                     bounds=bounds,
-                    tol=1e-14,  # 1e-12
+                    tol=1e-12,  # 1e-12
                 )
             else:
                 opt_res = scipy.optimize.minimize(
@@ -623,7 +707,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                     method="L-BFGS-B",
                     jac=True,
                     bounds=bounds,
-                    tol=1e-14,  # 1e-12
+                    tol=1e-12,  # 1e-12
                     options={'maxiter': max_iter},   # added options
                 )
             self._check_optimize_result("lbfgs", opt_res, max_iter=max_iter)  # added max_iter

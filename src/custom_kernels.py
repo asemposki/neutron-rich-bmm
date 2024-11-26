@@ -128,7 +128,7 @@ class Changepoint(Kernel):
                                  sigmoid(Y, self.changepoint, self.width).T) * self.K2
                                         
         # only for when optimization of hyperparameters is needed
-        if eval_gradient:  # for the single hyperparameter now that is varying (changepoint)
+        if eval_gradient:
             
             if self.hyperparameter_changepoint.fixed:
                 # hyperparameter changepoint kept fixed (no gradient)
@@ -197,7 +197,7 @@ class Changepoint(Kernel):
                 self.__class__.__name__,
                 ", ".join(map("{0:.3g}".format, self.changepoint)),
             )
-        else:  # isotropic  (does this work?) NOPE, WHY NOT
+        else:  # isotropic
             return "{0}(changepoint={1:.3g}, width={2:.3g})".format(
                 self.__class__.__name__, self.changepoint, self.width
             )
