@@ -15,7 +15,6 @@ from sklearn.utils import check_random_state
 
 GPR_CHOLESKY_LOWER = True
 
-
 class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
 
     # training function ---> add hyperparameter constraints here
@@ -314,7 +313,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             )
             # the log likelihood gradient is the sum-up across the outputs
             log_likelihood_gradient = log_likelihood_gradient_dims.sum(axis=-1)
-            
+        
         ### ---- adding the log prior in a proxy lml expression ---- ###
         if prior is True:
             

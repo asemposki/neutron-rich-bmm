@@ -10,7 +10,7 @@ from sklearn.gaussian_process.kernels import ConstantKernel as C
 
 # set up a wrapper for sklearn kernel class
 class Changepoint(Kernel): 
-    
+
     r'''
     Designs a non-stationary changepoint kernel that inherits 
     from the sklearn RBF Kernel class.
@@ -154,7 +154,7 @@ class Changepoint(Kernel):
                         K_gradient_cp = np.empty((self.K.shape[0], self.K.shape[1], 0))  # no gradient
                     
                     if not self.hyperparameter_width.fixed:
-                        K_gradient_w = (self.width*(np.outer((-sig_grad(X, self.changepoint, self.width, 'w').T), \
+                        self.K_gradient_w = (self.width*(np.outer((-sig_grad(X, self.changepoint, self.width, 'w').T), \
                                             (np.ones(len(Y)) - sigmoid(Y, self.changepoint, self.width).T)) \
                                     * self.K1 + np.outer((np.ones(len(X)) - \
                                                             sigmoid(X, self.changepoint, self.width).T), \
@@ -165,7 +165,7 @@ class Changepoint(Kernel):
                                                         sig_grad(Y, self.changepoint, self.width, 'w').T) \
                                     * self.K2))[:,:,np.newaxis]
                     else:
-                        K_gradient_w = np.empty((self.K.shape[0], self.K.shape[1], 0))   # no gradient
+                        self.K_gradient_w = np.empty((self.K.shape[0], self.K.shape[1], 0))   # no gradient
                     
                  #   return self.K, K_gradient
                 elif self.type == 'theta':
@@ -177,7 +177,7 @@ class Changepoint(Kernel):
                 raise ValueError('The kernel has not been implemented for anisotropic cases.')
             
             # full gradient return
-            return self.K, np.dstack((K_gradient_cp, K_gradient_w))  # is this ordered correctly? how do we know? check?
+            return self.K, np.dstack((K_gradient_cp, self.K_gradient_w))  # is this ordered correctly? how do we know? check?
                     
         else:
             return self.K  # no gradient returned
