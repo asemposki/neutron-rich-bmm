@@ -18,7 +18,7 @@ GPR_CHOLESKY_LOWER = True
 class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
 
     # training function ---> add hyperparameter constraints here
-    def fit(self, X, y, priors=True, prior_choice='truncnorm', cutoff=40, max_iter=None):
+    def fit(self, X, y, priors=True, prior_choice='truncnorm', prior_type=None, cutoff=40, max_iter=None):
         """Fit Gaussian process regression model.
 
         Parameters
@@ -37,6 +37,12 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             The choice of which type of prior to use on the length scale.
             Default is 'truncnorm'; other options are 'skewnorm' and 
             'uniform'.
+
+        prior_type : dict
+            The type of prior we want to use on the hyperparameters when
+            in a situation where more than one hyperparameter will be
+            optimized, or when we do not want to use a log normal prior
+            on the chosen hyperparameter in the changepoint kernel.
             
         cutoff : int
             The toggle for which pQCD cutoff we are using. 
@@ -51,6 +57,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         # assign class variables
         self.cutoff = cutoff
         self.prior_choice = prior_choice
+        self.prior_type = prior_type
         
         if self.kernel is None:  # Use an RBF kernel as default
             self.kernel_ = C(1.0, constant_value_bounds="fixed") * RBF(
@@ -344,6 +351,8 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 log_total = log_likelihood + log_prior_value_ls + log_prior_value_sig
                 log_total_gradient = log_likelihood_gradient + \
                 self.log_prior_ls_gradient(theta) + self.log_prior_sig_gradient(theta)
+        
+        # here no prior will be included (standard sklearn architecture)
         else:
             log_total = log_likelihood
 
@@ -372,7 +381,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             def deriv_w(w):
                 return stats.norm.logpdf(w, 0.16, 0.155)
             
-        # optimizing both parameters
+        # optimizing both parameters (prior choice can be included here!)
         if cp_opt is True and w_opt is True:
             cp = np.exp(theta[0])
             w = np.exp(theta[1])
@@ -382,33 +391,54 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             wa = np.exp(self.kernel_.bounds[1,0])
             wb = np.exp(self.kernel_.bounds[1,1])
 
+            # construct the prior and gradient
             if self.cutoff == 20:
-                deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
-                deriv_w_norm = ndt.Derivative(deriv_w, step=1e-4, method='central')
+                if self.prior_type['cp'] == 'truncnorm' and self.prior_type['w'] == 'truncnorm':
+                    deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
+                    deriv_w_norm = ndt.Derivative(deriv_w, step=1e-4, method='central')
+                    log_prior = self.luniform_ls(cp, cpa, cpb) + \
+                        stats.norm.logpdf(cp, 0.98, 0.33) + \
+                            self.luniform_ls(w, wa, wb) + \
+                        stats.norm.logpdf(w, 0.16, 0.155)
+                    log_gradient = deriv_cp_norm(cp) + deriv_w_norm(w)
                 
-                # construct the prior and gradient
-                log_prior = self.luniform_ls(cp, cpa, cpb) + \
-                    stats.norm.logpdf(cp, 0.98, 0.33) + \
-                        self.luniform_ls(w, wa, wb) + \
-                    stats.norm.logpdf(w, 0.16, 0.155)
-                log_gradient = deriv_cp_norm(cp) + deriv_w_norm(w)
+                elif self.prior_type['cp'] == 'truncnorm' and self.prior_type['w'] == 'free':
+                    deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
+                    log_prior = self.luniform_ls(cp, cpa, cpb) + \
+                        stats.norm.logpdf(cp, 0.98, 0.33) + \
+                            self.luniform_ls(w, wa, wb)
+                    log_gradient = deriv_cp_norm(cp)
                 
+                elif self.prior_type['w'] == 'truncnorm' and self.prior_type['cp'] == 'free':
+                    deriv_w_norm = ndt.Derivative(deriv_w, step=1e-4, method='central')
+                    log_prior = self.luniform_ls(cp, cpa, cpb) + \
+                            self.luniform_ls(w, wa, wb) + \
+                        stats.norm.logpdf(w, 0.16, 0.155)
+                    log_gradient = deriv_w_norm(w)
+                    
+                elif self.prior_type['cp'] == 'free' and self.prior_type['w'] == 'free':
+                    log_prior = self.luniform_ls(cp, cpa, cpb) + self.luniform_ls(w, wa, wb)
+                    log_gradient = 0.0
+
                 return log_prior, log_gradient
 
         # optimizing width only
-        elif cp_opt is not True and w_opt is True:
+        elif w_opt is True and cp_opt is not True:
             w = np.exp(theta[0])
             wa = np.exp(self.kernel_.bounds[0,0])
             wb = np.exp(self.kernel_.bounds[0,1])
 
+            # construct the prior and gradient
             if self.cutoff == 20:
-                deriv_w_norm = ndt.Derivative(deriv_w, step=1e-4, method='central')
+                if self.prior_type['w'] == 'truncnorm':
+                    deriv_w_norm = ndt.Derivative(deriv_w, step=1e-4, method='central')
+                    log_prior = self.luniform_ls(w, wa, wb) + \
+                        stats.norm.logpdf(w, 0.16, 0.155)
+                    log_gradient = deriv_w_norm(w)
+                elif self.prior_type['w'] == 'free':
+                    log_prior = self.luniform_ls(w, wa, wb)
+                    log_gradient = 0.0
 
-                # construct the prior and gradient
-                log_prior = self.luniform_ls(w, wa, wb) + \
-                    stats.norm.logpdf(w, 0.16, 0.155)
-                log_gradient = deriv_w_norm(w)
-                
                 return log_prior, log_gradient
 
         # optimizing changepoint only
@@ -417,13 +447,18 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             cpa = np.exp(self.kernel_.bounds[0,0])
             cpb = np.exp(self.kernel_.bounds[0,1])
 
+            # construct the prior and gradient
             if self.cutoff == 20:
-                deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
+                if self.prior_type['cp'] == 'truncnorm':
+                    deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
 
-                # construct the prior and gradient
-                log_prior = self.luniform_ls(cp, cpa, cpb) + \
-                    stats.norm.logpdf(cp, 0.98, 0.33)
-                log_gradient = deriv_cp_norm(cp)
+                    log_prior = self.luniform_ls(cp, cpa, cpb) + \
+                        stats.norm.logpdf(cp, 0.98, 0.33)
+                    log_gradient = deriv_cp_norm(cp)
+                
+                elif self.prior_type['cp'] == 'free':
+                    log_prior = self.luniform_ls(cp, cpa, cpb)
+                    log_gradient = 0.0
 
                 return log_prior, log_gradient
             
