@@ -43,3 +43,23 @@ def tov_data(edens_full, pres_dict, save=False, filepath=None):
     }
 
     return tov_dict
+
+def causality_stability(cs2, edens, pressure):
+    
+    # check if reshaping is needed (probably unnecessary)
+    if cs2.ndim == 1:
+        cs2 = cs2.reshape(-1,1)
+
+    # run over the draws (must be given in [density, draws]!)
+    ind_list = []
+    for i in range(len(cs2)):
+        for j in range(len(cs2.T)):
+            if cs2[i,j] > 1.0 or cs2[i,j] < 0.0:
+                ind_list.append(j)   # cut out the draws (make sure this works right)
+                
+    # cut these out of the draws in the TOV results below
+    cs2_reduced = np.delete(cs2, ind_list, axis=1)
+    pressure_reduced = np.delete(pressure, ind_list, axis=1)
+    edens_reduced = np.delete(edens, ind_list, axis=1)
+
+    return cs2_reduced, edens_reduced, pressure_reduced
