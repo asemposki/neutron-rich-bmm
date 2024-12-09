@@ -375,11 +375,11 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         w_opt = kwargs['w_opt']
 
         # gradient functions
-        if self.cutoff == 20:
-            def deriv_cp(cp):
-                return stats.norm.logpdf(cp, 0.98, 0.33)
-            def deriv_w(w):
-                return stats.norm.logpdf(w, 0.16, 0.155)
+        # if self.cutoff == 20:
+        def deriv_cp(cp):
+            return stats.norm.logpdf(cp, 0.98, 0.33)
+        def deriv_w(w):
+            return stats.norm.logpdf(w, 0.16, 0.155)
             
         # optimizing both parameters (prior choice can be included here!)
         if cp_opt is True and w_opt is True:
@@ -392,35 +392,35 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             wb = np.exp(self.kernel_.bounds[1,1])
 
             # construct the prior and gradient
-            if self.cutoff == 20:
-                if self.prior_type['cp'] == 'truncnorm' and self.prior_type['w'] == 'truncnorm':
-                    deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
-                    deriv_w_norm = ndt.Derivative(deriv_w, step=1e-4, method='central')
-                    log_prior = self.luniform_ls(cp, cpa, cpb) + \
-                        stats.norm.logpdf(cp, 0.98, 0.33) + \
-                            self.luniform_ls(w, wa, wb) + \
-                        stats.norm.logpdf(w, 0.16, 0.155)
-                    log_gradient = deriv_cp_norm(cp) + deriv_w_norm(w)
+            #if self.cutoff == 20:
+            if self.prior_type['cp'] == 'truncnorm' and self.prior_type['w'] == 'truncnorm':
+                deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
+                deriv_w_norm = ndt.Derivative(deriv_w, step=1e-4, method='central')
+                log_prior = self.luniform_ls(cp, cpa, cpb) + \
+                    stats.norm.logpdf(cp, 0.98, 0.33) + \
+                        self.luniform_ls(w, wa, wb) + \
+                    stats.norm.logpdf(w, 0.16, 0.155)
+                log_gradient = deriv_cp_norm(cp) + deriv_w_norm(w)
+            
+            elif self.prior_type['cp'] == 'truncnorm' and self.prior_type['w'] == 'free':
+                deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
+                log_prior = self.luniform_ls(cp, cpa, cpb) + \
+                    stats.norm.logpdf(cp, 0.98, 0.33) + \
+                        self.luniform_ls(w, wa, wb)
+                log_gradient = deriv_cp_norm(cp)
+            
+            elif self.prior_type['w'] == 'truncnorm' and self.prior_type['cp'] == 'free':
+                deriv_w_norm = ndt.Derivative(deriv_w, step=1e-4, method='central')
+                log_prior = self.luniform_ls(cp, cpa, cpb) + \
+                        self.luniform_ls(w, wa, wb) + \
+                    stats.norm.logpdf(w, 0.16, 0.155)
+                log_gradient = deriv_w_norm(w)
                 
-                elif self.prior_type['cp'] == 'truncnorm' and self.prior_type['w'] == 'free':
-                    deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
-                    log_prior = self.luniform_ls(cp, cpa, cpb) + \
-                        stats.norm.logpdf(cp, 0.98, 0.33) + \
-                            self.luniform_ls(w, wa, wb)
-                    log_gradient = deriv_cp_norm(cp)
-                
-                elif self.prior_type['w'] == 'truncnorm' and self.prior_type['cp'] == 'free':
-                    deriv_w_norm = ndt.Derivative(deriv_w, step=1e-4, method='central')
-                    log_prior = self.luniform_ls(cp, cpa, cpb) + \
-                            self.luniform_ls(w, wa, wb) + \
-                        stats.norm.logpdf(w, 0.16, 0.155)
-                    log_gradient = deriv_w_norm(w)
-                    
-                elif self.prior_type['cp'] == 'free' and self.prior_type['w'] == 'free':
-                    log_prior = self.luniform_ls(cp, cpa, cpb) + self.luniform_ls(w, wa, wb)
-                    log_gradient = 0.0
+            elif self.prior_type['cp'] == 'free' and self.prior_type['w'] == 'free':
+                log_prior = self.luniform_ls(cp, cpa, cpb) + self.luniform_ls(w, wa, wb)
+                log_gradient = 0.0
 
-                return log_prior, log_gradient
+            return log_prior, log_gradient
 
         # optimizing width only
         elif w_opt is True and cp_opt is not True:
@@ -429,17 +429,17 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             wb = np.exp(self.kernel_.bounds[0,1])
 
             # construct the prior and gradient
-            if self.cutoff == 20:
-                if self.prior_type['w'] == 'truncnorm':
-                    deriv_w_norm = ndt.Derivative(deriv_w, step=1e-4, method='central')
-                    log_prior = self.luniform_ls(w, wa, wb) + \
-                        stats.norm.logpdf(w, 0.16, 0.155)
-                    log_gradient = deriv_w_norm(w)
-                elif self.prior_type['w'] == 'free':
-                    log_prior = self.luniform_ls(w, wa, wb)
-                    log_gradient = 0.0
+            # if self.cutoff == 20:
+            if self.prior_type['w'] == 'truncnorm':
+                deriv_w_norm = ndt.Derivative(deriv_w, step=1e-4, method='central')
+                log_prior = self.luniform_ls(w, wa, wb) + \
+                    stats.norm.logpdf(w, 0.16, 0.155)
+                log_gradient = deriv_w_norm(w)
+            elif self.prior_type['w'] == 'free':
+                log_prior = self.luniform_ls(w, wa, wb)
+                log_gradient = 0.0
 
-                return log_prior, log_gradient
+            return log_prior, log_gradient
 
         # optimizing changepoint only
         elif cp_opt is True and w_opt is not True:
@@ -448,19 +448,19 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             cpb = np.exp(self.kernel_.bounds[0,1])
 
             # construct the prior and gradient
-            if self.cutoff == 20:
-                if self.prior_type['cp'] == 'truncnorm':
-                    deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
+            # if self.cutoff == 20:
+            if self.prior_type['cp'] == 'truncnorm':
+                deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
 
-                    log_prior = self.luniform_ls(cp, cpa, cpb) + \
-                        stats.norm.logpdf(cp, 0.98, 0.33)
-                    log_gradient = deriv_cp_norm(cp)
-                
-                elif self.prior_type['cp'] == 'free':
-                    log_prior = self.luniform_ls(cp, cpa, cpb)
-                    log_gradient = 0.0
+                log_prior = self.luniform_ls(cp, cpa, cpb) + \
+                    stats.norm.logpdf(cp, 0.98, 0.33)
+                log_gradient = deriv_cp_norm(cp)
+            
+            elif self.prior_type['cp'] == 'free':
+                log_prior = self.luniform_ls(cp, cpa, cpb)
+                log_gradient = 0.0
 
-                return log_prior, log_gradient
+            return log_prior, log_gradient
             
 
     def log_prior_ls(self, theta, **kwargs):

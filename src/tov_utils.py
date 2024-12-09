@@ -1,6 +1,6 @@
 import numpy as np
 
-# create a routine for the TOV sequence
+# create a routine for the TOV sequence (and see what we need for the rest...)
 def tov_data(edens_full, pres_dict, save=False, filepath=None):
 
     # number of samples
@@ -9,8 +9,8 @@ def tov_data(edens_full, pres_dict, save=False, filepath=None):
     # organize the samples into the correct pairing (same style as a file would be)
     low_den_file = np.loadtxt("../data/NSM_data/MFT_ns6p.dat", skiprows=1)
 
-    # turn edens_full into an array
-    edens = np.asarray(edens_full).T
+    # turn edens_full into an array  [density, draws] is needed
+    edens = np.asarray(edens_full)
 
     # save data in dat file backwards (without cs2 to start)
     tov_index = (np.where([pres_dict['dens'][i] <= 0.08 for i in range(len(pres_dict['dens']))])[0][-1] + 1)
@@ -27,19 +27,28 @@ def tov_data(edens_full, pres_dict, save=False, filepath=None):
     dens_tov = np.concatenate((low_den_file[::-1,2], density_final)).reshape(-1,1)
     cs2_tov = np.zeros(len(density_final) + len(low_den_file[:,0]))
 
+    # eliminate the information above the core of the star (assuming 10 times saturation high enough)
+    index_10 = np.where([dens_tov[i] <= 1.64 for i in range(len(dens_tov))])[0][-1] + 1
+    
+    # cut the arrays
+    dens_end = dens_tov  #[:index_10]
+    edens_end = edens_tov  #[:index_10]
+    pres_end = pres_tov  #[:index_10]
+    cs2_end = cs2_tov  #[:index_10]
+
     # save the result if desired
     if save is True:
-        np.savez(filepath, density=dens_tov, \
-                edens=edens_tov, pres=pres_tov, cs2=cs2_tov)
-    else:
+        np.savez(filepath, density=dens_end, \
+                edens=edens_end, pres=pres_end, cs2=cs2_end)
+    else: 
         print('Data not saved.')
 
     # make a dict out of the results and return
     tov_dict = {
-        'dens': dens_tov,
-        'edens': edens_tov,
-        'pres': pres_tov,
-        'cs2': cs2_tov
+        'dens': dens_end,
+        'edens': edens_end,
+        'pres': pres_end,
+        'cs2': cs2_end
     }
 
     return tov_dict
