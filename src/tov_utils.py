@@ -1,7 +1,7 @@
 import numpy as np
 
-# create a routine for the TOV sequence (and see what we need for the rest...)
-def tov_data(edens_full, pres_dict, save=False, filepath=None):
+# create a routine for the TOV sequence
+def tov_data(edens_full, pres_dict, cs2_data=None, save=False, filepath=None):
 
     # number of samples
     samples = len(pres_dict['samples'].T)
@@ -10,14 +10,22 @@ def tov_data(edens_full, pres_dict, save=False, filepath=None):
     low_den_file = np.loadtxt("../data/NSM_data/MFT_ns6p.dat", skiprows=1)
 
     # turn edens_full into an array  [density, draws] is needed
-    edens = np.asarray(edens_full)
+#     edens = np.asarray(edens_full)  #.T
+#     cs2 = np.asarray(cs2_data['samples'])  #.T
 
-    # save data in dat file backwards (without cs2 to start)
+    # rename dicts
+    edens = edens_full
+    cs2 = cs2_data
+
+    # get organized data
     tov_index = (np.where([pres_dict['dens'][i] <= 0.08 for i in range(len(pres_dict['dens']))])[0][-1] + 1)
-    edens_final = edens[tov_index:]
+    edens_final = edens[tov_index:, :]
     gp_final = np.asarray([pres_dict['samples'][tov_index:, i] for i in range(samples)]).T #*\
 #                             convert_interp(pres_dict['dens'][tov_index:]) for i in range(samples)]).T
     density_final = pres_dict['dens'][tov_index:]
+    
+    if cs2_data is not None:
+        cs2_final = cs2[tov_index:, :]
 
     # run through and append the low density data to these arrays and then save to file
     edens_tov = np.asarray([np.concatenate((low_den_file[::-1,0], edens_final[:,i]))\
@@ -25,7 +33,13 @@ def tov_data(edens_full, pres_dict, save=False, filepath=None):
     pres_tov = np.asarray([np.concatenate((low_den_file[::-1,1], gp_final[:,i])) \
                             for i in range(samples)]).T
     dens_tov = np.concatenate((low_den_file[::-1,2], density_final)).reshape(-1,1)
-    cs2_tov = np.zeros(len(density_final) + len(low_den_file[:,0]))
+    
+    if cs2_data is not None:
+        # solve for the speed of sound using edens and pres at low densities
+        dpdeps = np.gradient(low_den_file[::-1,1], low_den_file[::-1,0], edge_order=2)  # might need tweaking
+        cs2_tov = np.asarray([np.concatenate((dpdeps, cs2_final[:,i])) for i in range(samples)]).T
+    else:
+        cs2_tov = np.zeros(len(density_final) + len(low_den_file[:,0]))
 
     # eliminate the information above the core of the star (assuming 10 times saturation high enough)
     index_10 = np.where([dens_tov[i] <= 1.64 for i in range(len(dens_tov))])[0][-1] + 1

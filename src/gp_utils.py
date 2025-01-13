@@ -102,7 +102,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             
         else:
             shape_y_stats = (y.shape[1],) if y.ndim == 2 else 1
-            self._y_train_mean = np.zeros(shape=shape_y_stats)
+            self._y_train_mean = np.zeros(shape=shape_y_stats)   # mean function is ZERO no matter what in this code
             self._y_train_std = np.ones(shape=shape_y_stats)
 
         if np.iterable(self.alpha) and self.alpha.shape[0] != y.shape[0]:

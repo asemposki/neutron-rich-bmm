@@ -2,6 +2,7 @@
 import numpy as np
 import scipy.integrate as scint
 import scipy as sp
+from scipy import stats
 from scipy.interpolate import interp1d
 import numdifftools as ndt
 import matplotlib.pyplot as plt
@@ -184,7 +185,7 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
     
 
 # define the speed of sound function 
-def speed_of_sound(dens, pressure, edens=None, sat=False, integrate='forward', sampled=False):
+def speed_of_sound(dens, pressure, edens=None, sat=False, bounds=68, integrate='forward', sampled=False):
 
     '''
     Function to evaluate the speed of sound of
@@ -288,18 +289,15 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, integrate='forward', s
                                  i in range(len(edens_full))])   # samples, nB
 
         # get the results using 1/mu dP/dn instead (more stable)
-        #print(pres.shape)  # nB, samples
         dpdn_samples = np.gradient(pres, dn, axis=0, edge_order=2)
-        
-        #print(dpdn_samples.shape)
-        
+                
         cs2_samples = np.asarray([(mu_samples[i,:])**(-1.0) * dpdn_samples[:,i] \
                                   for i in range(len(edens_full))])
         
         # get mean, std_dev estimations out, store and return
-        cs2_mean = np.nanmean(cs2_samples, axis=0)
+        cs2_mean = np.nanmean(cs2_samples, axis=0)  # run over samples
         cs2_std = np.nanstd(cs2_samples, axis=0)
-        
+                
         cs2 = {
             'mean': cs2_mean,
             'std': cs2_std,
@@ -308,10 +306,13 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, integrate='forward', s
         
         return cs2, edens_full
     
+    # first, make bounds flexible
+    zscore = stats.norm.ppf((1.0 + (bounds/100.0))/2.0)
+    
     # extract the necessary information
     p_mean = pressure['mean']
-    p_low = pressure['mean'] - pressure['std_dev']
-    p_high = pressure['mean'] + pressure['std_dev']
+    p_low = pressure['mean'] - zscore*pressure['std_dev']
+    p_high = pressure['mean'] + zscore*pressure['std_dev']
         
     # extract the parameters for edens (for pqcd these will be full curves)
     e_mean = edens['mean']
@@ -448,7 +449,7 @@ def select_draws(pressure_dict:dict):
     return np.asarray(valid_samples)
 
 # define function for the cs2 calculation in full
-def cs2_routine(gp_dict, sat_cut=None, plot=True, save_data=False):
+def cs2_routine(gp_dict, sat_cut=None, bounds=68, plot=True, save_data=False):
     
     # unpack the dict
     gp_dens = gp_dict['dens']
@@ -462,8 +463,8 @@ def cs2_routine(gp_dict, sat_cut=None, plot=True, save_data=False):
     elif gp_dict['true'] is not None and gp_dict['samples'] is None:
         pres_samples = gp_dict['true']
         sampling = True
-    elif gp_dict['true'] is None and gp_dict['samples'] is None:
-        sampling = False
+    elif gp_dict['true'] is None and gp_dict['samples'] is None:  ### we want this to work correctly! ###
+        sampling = False  
     else:
         raise ValueError('Too many variables to assign.')
     
@@ -495,7 +496,7 @@ def cs2_routine(gp_dict, sat_cut=None, plot=True, save_data=False):
             'std_dev': gp_std[sat_cut:]*gp_cs2_convert_arr[sat_cut:]
         }
     
-    # energy density bounds (not changing)
+    # energy density bounds (not changing) (backwards integration)
     en_0 = 43656.4556069574
     en_0_lower = 43510.21143367375
     en_0_upper = 43797.873283570414
@@ -513,11 +514,11 @@ def cs2_routine(gp_dict, sat_cut=None, plot=True, save_data=False):
             'upper': en_0_upper,
             'samples': edens_0_draw_arr
         }
-    
+            
         # call speed of sound function (sampled = True automatically runs the integration downwards)
         cs2_sampled, edens_full = speed_of_sound(gp_dens[sat_cut:], pres_dict, \
                                              edens_dict, sat=False, sampled=True)
-        
+                
     else:
         # make dict of values to send to speed of sound code
         edens_dict = {
@@ -526,26 +527,26 @@ def cs2_routine(gp_dict, sat_cut=None, plot=True, save_data=False):
             'upper': en_0_upper
         }
     
-        # call speed of sound function
+        # call speed of sound function (not giving correct results currently!!!)
         _, cs2_sampled, _, edens_full, _ = speed_of_sound(gp_dens[sat_cut:], pres_dict, \
-                                             edens_dict, sat=False, sampled=False, integrate='backward')
+                                             edens_dict, sat=False, sampled=False, bounds=bounds, integrate='backward')
         
     if sampling is True:
-        # get mean and std_dev for edens to plot P(eps)
+        # get mean and std_dev for use later
         edens_mean = np.nanmean(edens_full, axis=0)
         edens_std = np.nanstd(edens_full, axis=0)
         
-    # dict entries 
-    if sampling is True:
-        cs2_sampled_mean = cs2_sampled['mean']
-        cs2_sampled_std = cs2_sampled['std']
-        cs2_sampled_samples = cs2_sampled['samples']
+        edens_final_dict = {
+            'mean': edens_mean,
+            'std': edens_std,
+            'samples': np.asarray(edens_full)
+        }
     
     # plot if desired
     if plot is True:
         cs2_plots(edens_full, pres_dict, cs2_sampled, sat_cut)
         
-    # save for plotting later (uncomment to save)
+    # save for plotting later
     if save_data is True:
         np.savez('../data/eos_data/cs2_gp_40.npz', dens=gp_dens[sat_cut:], \
                  mean=cs2_sampled['mean'], std=cs2_sampled['std'], samples=cs2_sampled['samples'])
@@ -553,7 +554,7 @@ def cs2_routine(gp_dict, sat_cut=None, plot=True, save_data=False):
     # print statement to let user know it has finished
     print('Woo it is over!')
 
-    return pres_dict, edens_full, cs2_sampled
+    return pres_dict, edens_final_dict, cs2_sampled
 
 # plotter for speed of sound and draws
 def cs2_plots(edens_full, pres_dict, cs2_sampled, sat_cut):
