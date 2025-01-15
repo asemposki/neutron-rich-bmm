@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline, interp1d
 
-# helper function to take FRG contour and make into data
+# helper function to take FRG contour and make into data and make greedy estimates
 def frg_greedy_data(plot=False):
     
     df_frg = pd.read_csv('../data/frg_data_pressure.csv')
@@ -29,12 +29,12 @@ def frg_greedy_data(plot=False):
         mean_vals[i] = (lowercontourgrid[i] + uppercontourgrid[i])/2.0
         std_vals[i] = (uppercontourgrid[i]-lowercontourgrid[i])/2.0
 
-    # discretize this to make it not 100 points
+    # discretize this to make it not 100 points ... OR make more points ...
     frg_data = {
-        'dens': new_grid[10::28],
-        'mean': mean_vals[10::28],
-        'std': std_vals[10::28],
-        'cov': np.diag(np.square(std_vals[10::28]))
+        'dens': new_grid[1::10],
+        'mean': mean_vals[1::10],
+        'std': std_vals[1::10],
+        'cov': np.diag(np.square(std_vals[1::10]))
     }
 
     if plot is True:
@@ -48,7 +48,7 @@ def frg_greedy_data(plot=False):
         plt.xlim(0.25, 100.0)
         plt.show()
 
-    return frg_data
+    return frg_data, lowercontour, uppercontour
 
 
 def log_full_cubic_spline(x:np.array, data:np.array, x_select=None):
