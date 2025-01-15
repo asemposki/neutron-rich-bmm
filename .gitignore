@@ -5,6 +5,7 @@
 *.txt
 *.ps
 *.eps
+*.pkl
 gptools/
 gsum/
 nuclear-matter-convergence/
