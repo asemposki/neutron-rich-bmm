@@ -25,6 +25,8 @@ notebooks/More_Plots/
 notebooks/BMM_GP_NSM_Messy.ipynb
 notebooks/BMM_GP-Matern.ipynb
 notebooks/BMM_GP_NSM-Matern.ipynb
+notebooks/GIF_plots/
+notebooks/GIF_plots_Greedy/
 
 # IDE specifics
 .idea/
