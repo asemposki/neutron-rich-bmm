@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline, interp1d
 
 # helper function to take FRG contour and make into data and make greedy estimates
-def frg_greedy_data(plot=False):
+def frg_greedy_data(plot=False, larger_errors=False):
     
     df_frg = pd.read_csv('../data/frg_data_pressure.csv')
     frg_anm = {
@@ -24,17 +24,25 @@ def frg_greedy_data(plot=False):
     # finding mean line within the contour (easiest to use for more points, can draw random ones later)
     mean_vals = np.zeros(len(new_grid))
     std_vals = np.zeros(len(new_grid))
+
+    # find last value in array for std_vals here
+    if larger_errors is True:
+        std_last = (uppercontourgrid[-1]-lowercontourgrid[-1])/2.0
+        
+        # use it for every value in the set
+        std_vals = std_last*np.ones(len(new_grid))
     
     for i in range(len(new_grid)):
         mean_vals[i] = (lowercontourgrid[i] + uppercontourgrid[i])/2.0
-        std_vals[i] = (uppercontourgrid[i]-lowercontourgrid[i])/2.0
+        if larger_errors is False:
+            std_vals[i] = (uppercontourgrid[i]-lowercontourgrid[i])/2.0
 
     # discretize this to make it not 100 points ... OR make more points ...
     frg_data = {
-        'dens': new_grid[1::10],
-        'mean': mean_vals[1::10],
-        'std': std_vals[1::10],
-        'cov': np.diag(np.square(std_vals[1::10]))
+        'dens': new_grid,
+        'mean': mean_vals,
+        'std': std_vals,
+        'cov': np.diag(np.square(std_vals))
     }
 
     if plot is True:
@@ -43,6 +51,7 @@ def frg_greedy_data(plot=False):
         plt.plot(new_grid, mean_vals, 'g')
         plt.plot(new_grid, uppercontourgrid, 'b')
         plt.plot(new_grid, lowercontourgrid, 'r')
+        plt.fill_between(new_grid, mean_vals-std_vals, mean_vals+std_vals, alpha=0.3)
         plt.xscale('log')
         plt.ylim(0.0, 1.2)
         plt.xlim(0.25, 100.0)
