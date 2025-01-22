@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from scipy.interpolate import CubicSpline, interp1d
+from scipy.interpolate import CubicSpline, interp1d, make_interp_spline, BSpline, splrep, splev
 
 # helper function to take FRG contour and make into data and make greedy estimates
 def frg_greedy_data(plot=False, larger_errors=False):
@@ -60,15 +60,25 @@ def frg_greedy_data(plot=False, larger_errors=False):
     return frg_data, lowercontour, uppercontour
 
 
-def log_full_cubic_spline(x:np.array, data:np.array, x_select=None):
+def log_full_spline(x:np.array, data:np.array, x_select=None, order=3):
+   
+    # old fashioned way for any other than cubic
+    if order != 3:
+        t, c, k = splrep(x, data, k=order)
+
+        if x_select is not None:
+            return splev(x_select, (t, c, k))
+        else:
+            return splev(x)
     
-    # new version to accomodate the FRG mock data
-    cubic_spline = CubicSpline(np.log(x), np.log(data), extrapolate=True)
-    
-    if x_select is not None:
-        return cubic_spline(np.log(x_select))
+    # cubic spline
     else:
-        return cubic_spline(np.log(x))
+        spline = CubicSpline(np.log(x), np.log(data), extrapolate=True)
+
+        if x_select is not None:
+            return spline(np.log(x_select))
+        else:
+            return spline(np.log(x))
 
 
 def full_cubic_spline(x:np.array, data:np.array, extrapolate=True):
