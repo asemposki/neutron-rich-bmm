@@ -148,7 +148,7 @@ class Changepoint(Kernel):
                                  tanh(Y, self.changepoint, self.width).T) * self.K2
                                         
         # only for when optimization of hyperparameters is needed (DON'T TOUCH THIS AGAIN YOU IDIOT)
-        if eval_gradient:  # NEED TO MAKE THIS FOR THE TANH FUNCTION
+        if eval_gradient:
 
             # check if this is correct or if it should be log of params somehow encoded (YES)
             if self.anisotropic is False:
@@ -188,7 +188,43 @@ class Changepoint(Kernel):
                         self.K_gradient_w = np.empty((self.K.shape[0], self.K.shape[1], 0))   # no gradient
 
                     # full gradient return
-                    return self.K, np.dstack((K_gradient_cp, self.K_gradient_w))  # is this ordered correctly? how do we know? check?                    
+                    return self.K, np.dstack((K_gradient_cp, self.K_gradient_w))  # is this ordered correctly? how do we know? check?   
+
+                elif self.type == 'tanh':
+
+                    # gradient wrt changepoint
+                    if self.hyperparameter_changepoint.fixed is False:
+                        K_gradient_cp = (self.changepoint*(np.outer((-tanh_grad(X, self.changepoint, self.width).T), \
+                                            (np.ones(len(Y)) - tanh(Y, self.changepoint, self.width).T)) \
+                                    * self.K1 + np.outer((np.ones(len(X)) - \
+                                                            tanh(X, self.changepoint, self.width).T), \
+                                                        -tanh_grad(Y, self.changepoint, self.width).T) \
+                                    * self.K1 + np.outer(tanh_grad(X, self.changepoint,self.width).T,  \
+                                                        tanh(self.changepoint, self.width, Y).T) \
+                                    * self.K2 + np.outer(tanh(X, self.changepoint,self.width).T, \
+                                                        tanh_grad(Y, self.changepoint, self.width).T) \
+                                    * self.K2))[:,:,np.newaxis]
+                    else:
+                        K_gradient_cp = np.empty((self.K.shape[0], self.K.shape[1], 0))  # no gradient
+                    
+                    # gradient wrt width
+                    if self.hyperparameter_width.fixed is False:
+                        self.hey = 1.0
+                        self.K_gradient_w = (self.width*(np.outer((-tanh_grad(X, self.changepoint, self.width, 'w').T), \
+                                            (np.ones(len(Y)) - tanh(Y, self.changepoint, self.width).T)) \
+                                    * self.K1 + np.outer((np.ones(len(X)) - \
+                                                            tanh(X, self.changepoint, self.width).T), \
+                                                        -tanh_grad(Y, self.changepoint, self.width, 'w').T) \
+                                    * self.K1 + np.outer(tanh_grad(X, self.changepoint, self.width, 'w').T,  \
+                                                        tanh(self.changepoint, self.width, Y).T) \
+                                    * self.K2 + np.outer(tanh(X, self.changepoint,self.width).T, \
+                                                        tanh_grad(Y, self.changepoint, self.width, 'w').T) \
+                                    * self.K2))[:,:,np.newaxis]
+                    else:
+                        self.K_gradient_w = np.empty((self.K.shape[0], self.K.shape[1], 0))   # no gradient
+
+                    # full gradient return
+                    return self.K, np.dstack((K_gradient_cp, self.K_gradient_w))           
                 
                 elif self.type == 'theta':
                     raise ValueError('''The gradient cannot be evaluated for the Heaviside changepoint kernel.'''
