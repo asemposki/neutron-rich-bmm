@@ -22,7 +22,8 @@ class Changepoint(Kernel):
                       * \\sigma(x_j)
 
     where K1 is the first kernel and K2 is the second kernel, with the
-    changepoint defined by the sigmoid function.
+    changepoint defined by a chosen switching function. The current
+    options are 'linear', 'sigmoid', and 'tanh'.
     '''
     
     # import hyperparameter names here
@@ -41,7 +42,7 @@ class Changepoint(Kernel):
         self.changepoint = changepoint 
         self.changepoint_bounds = changepoint_bounds
         
-        # which kernel type am I using (make into 2 classes later)
+        # which kernel type am I using (make into 2 classes later or figure out how to key from outside)
         self.type = 'sigmoid'
         
         return None
@@ -126,9 +127,28 @@ class Changepoint(Kernel):
                               (np.ones(len(Y)) - sigmoid(Y, self.changepoint, self.width).T)) \
             * self.K1 + np.outer(sigmoid(X, self.changepoint,self.width).T, \
                                  sigmoid(Y, self.changepoint, self.width).T) * self.K2
+            
+        elif self.type == 'tanh':
+
+            # tanh function
+            def tanh(dens, x0, k):
+                return 0.5 + 0.5 * np.tanh((dens - x0)/k)
+            
+            # tanh deriv for cp and width
+            def tanh_grad(dens, x0, k, deriv='cp'):
+                if deriv == 'cp':
+                    return -0.5* np.cosh((dens - x0)/k)**(-2.0) / k
+                elif deriv == 'w':
+                    return -0.5 * (dens - x0) * np.cosh((dens - x0)/k)**(-2.0) / k**2.0
+            
+            # define kernel matrix
+            self.K = np.outer((np.ones(len(X)) - tanh(X, self.changepoint, self.width).T), \
+                              (np.ones(len(Y)) - tanh(Y, self.changepoint, self.width).T)) \
+            * self.K1 + np.outer(tanh(X, self.changepoint,self.width).T, \
+                                 tanh(Y, self.changepoint, self.width).T) * self.K2
                                         
         # only for when optimization of hyperparameters is needed (DON'T TOUCH THIS AGAIN YOU IDIOT)
-        if eval_gradient:
+        if eval_gradient:  # NEED TO MAKE THIS FOR THE TANH FUNCTION
 
             # check if this is correct or if it should be log of params somehow encoded (YES)
             if self.anisotropic is False:
