@@ -60,7 +60,7 @@ def frg_greedy_data(plot=False, larger_errors=False):
     return frg_data, lowercontour, uppercontour
 
 
-def log_full_spline(x:np.array, data:np.array, x_select=None, order=3):
+def log_full_spline(x:np.array, data:np.array, x_select=None, order=3, deriv_eval=False):
    
     # old fashioned way for any other than cubic
     if order != 3:
@@ -74,11 +74,44 @@ def log_full_spline(x:np.array, data:np.array, x_select=None, order=3):
     # cubic spline
     else:
         spline = CubicSpline(np.log(x), np.log(data), extrapolate=True)
+        
+        if deriv_eval is True:
+            deriv = spline.derivative(nu=1)
+            deriv2 = spline.derivative(nu=2)
+            deriv3 = spline.derivative(nu=3)
 
-        if x_select is not None:
-            return spline(np.log(x_select))
+            if x_select is not None:
+                deriveval1 = deriv(np.log(x_select))
+                deriveval2 = deriv2(np.log(x_select))
+                deriveval3 = deriv3(np.log(x_select))
+                
+                derivs = {
+                    '1': deriveval1,
+                    '2': deriveval2,
+                    '3': deriveval3
+                }
+                
+                return spline(np.log(x_select)), derivs
+            
+            else:
+                deriveval1 = deriv(np.log(x))
+                deriveval2 = deriv2(np.log(x))
+                deriveval3 = deriv3(np.log(x))
+                
+                derivs = {
+                    '1': deriveval1,
+                    '2': deriveval2,
+                    '3': deriveval3
+                }
+                    
+                return spline(np.log(x)), derivs
+        
         else:
-            return spline(np.log(x))
+            if x_select is not None:
+                return spline(np.log(x_select))
+            
+            else:
+                return spline(np.log(x))
 
 
 def full_cubic_spline(x:np.array, data:np.array, extrapolate=True):

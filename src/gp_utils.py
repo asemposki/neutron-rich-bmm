@@ -342,6 +342,8 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 # set up the LML or MAP estimation procedure for this kernel
                 log_prior, log_prior_gradient = self.log_prior_cp(theta, **arg_dict)
                 log_total = log_likelihood + log_prior
+                self.log_likelihood = log_likelihood
+                self.log_prior = log_prior
                 log_total_gradient = log_likelihood_gradient + log_prior_gradient
             
             # any stationary kernel choice

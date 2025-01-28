@@ -64,6 +64,8 @@ def tov_data(edens_full, pres_dict, cs2_data=None, save=False, filepath=None):
         'pres': pres_end,
         'cs2': cs2_end
     }
+    
+    print('''I'm done!''')
 
     return tov_dict
 
