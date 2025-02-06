@@ -18,7 +18,7 @@ GPR_CHOLESKY_LOWER = True
 class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
 
     # training function ---> add hyperparameter constraints here
-    def fit(self, X, y, priors=True, prior_choice='truncnorm', prior_type=None, cutoff=40, max_iter=None):
+    def fit(self, X, y, priors=True, prior_choice='truncnorm', prior_type=None, switch=None, cutoff=40, max_iter=None):
         """Fit Gaussian process regression model.
 
         Parameters
@@ -42,7 +42,13 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             The type of prior we want to use on the hyperparameters when
             in a situation where more than one hyperparameter will be
             optimized, or when we do not want to use a log normal prior
-            on the chosen hyperparameter in the changepoint kernel.
+            on the chosen hyperparameter in the changepoint kernel. This
+            also takes in the switching function type; currently options 
+            are 'tanh' and 'sigmoid'. 
+
+        switch : str
+            If using a changepoint kernel, specify which switching function
+            you are using.
             
         cutoff : int
             The toggle for which pQCD cutoff we are using. 
@@ -58,6 +64,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         self.cutoff = cutoff
         self.prior_choice = prior_choice
         self.prior_type = prior_type
+        self.switch = switch
         
         if self.kernel is None:  # Use an RBF kernel as default
             self.kernel_ = C(1.0, constant_value_bounds="fixed") * RBF(
@@ -324,7 +331,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         ### ---- adding the log prior in a proxy lml expression ---- ###
         if prior is True:
             
-            # non-stationary kernel format
+            # non-stationary kernel format (perfect for any changepoint kernel)
             if self.prior_choice == 'changepoint':
                 cp_bounds = True
                 w_bounds = True
@@ -346,10 +353,12 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 self.log_prior = log_prior
                 log_total_gradient = log_likelihood_gradient + log_prior_gradient
             
-            # any stationary kernel choice
+            # any stationary kernel choice (both hyperparameters are varied; can change this)
             else:
                 log_prior_value_ls = self.log_prior_ls(theta)
                 log_prior_value_sig = self.log_prior_sig(theta)
+                self.log_likelihood = log_likelihood
+                self.log_prior = log_prior_value_ls
                 log_total = log_likelihood + log_prior_value_ls + log_prior_value_sig
                 log_total_gradient = log_likelihood_gradient + \
                 self.log_prior_ls_gradient(theta) + self.log_prior_sig_gradient(theta)
@@ -357,6 +366,8 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         # here no prior will be included (standard sklearn architecture)
         else:
             log_total = log_likelihood
+            self.log_likelihood = log_likelihood
+            self.log_prior = 0.0
 
             if eval_gradient is True:
                 log_total_gradient = log_likelihood_gradient
@@ -376,13 +387,22 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         cp_opt = kwargs['cp_opt']
         w_opt = kwargs['w_opt']
 
+        # means and variances of width
+        if self.switch == 'sigmoid':
+            mean_w = 0.16
+            var_w = 0.155
+        elif self.switch == 'tanh':
+            mean_w = 0.32
+            var_w = 0.31
+
         # gradient functions
-        # if self.cutoff == 20:
         def deriv_cp(cp):
             return stats.norm.logpdf(cp, 0.98, 0.33)
-        def deriv_w(w):
+        def deriv_w_sigmoid(w):
             return stats.norm.logpdf(w, 0.16, 0.155)
-            
+        def deriv_w_tanh(w):
+            return stats.norm.logpdf(w, 0.32, 0.31)
+                    
         # optimizing both parameters (prior choice can be included here!)
         if cp_opt is True and w_opt is True:
             cp = np.exp(theta[0])
@@ -394,14 +414,16 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             wb = np.exp(self.kernel_.bounds[1,1])
 
             # construct the prior and gradient
-            #if self.cutoff == 20:
             if self.prior_type['cp'] == 'truncnorm' and self.prior_type['w'] == 'truncnorm':
                 deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
-                deriv_w_norm = ndt.Derivative(deriv_w, step=1e-4, method='central')
+                if self.switch == 'sigmoid':
+                    deriv_w_norm = ndt.Derivative(deriv_w_sigmoid, step=1e-4, method='central')
+                elif self.switch == 'tanh':
+                    deriv_w_norm = ndt.Derivative(deriv_w_tanh, step=1e-4, method='central')
                 log_prior = self.luniform_ls(cp, cpa, cpb) + \
                     stats.norm.logpdf(cp, 0.98, 0.33) + \
                         self.luniform_ls(w, wa, wb) + \
-                    stats.norm.logpdf(w, 0.16, 0.155)
+                    stats.norm.logpdf(w, mean_w, var_w)
                 log_gradient = deriv_cp_norm(cp) + deriv_w_norm(w)
             
             elif self.prior_type['cp'] == 'truncnorm' and self.prior_type['w'] == 'free':
@@ -412,10 +434,13 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 log_gradient = deriv_cp_norm(cp)
             
             elif self.prior_type['w'] == 'truncnorm' and self.prior_type['cp'] == 'free':
-                deriv_w_norm = ndt.Derivative(deriv_w, step=1e-4, method='central')
+                if self.switch == 'sigmoid':
+                    deriv_w_norm = ndt.Derivative(deriv_w_sigmoid, step=1e-4, method='central')
+                elif self.switch == 'tanh':
+                    deriv_w_norm = ndt.Derivative(deriv_w_tanh, step=1e-4, method='central')
                 log_prior = self.luniform_ls(cp, cpa, cpb) + \
                         self.luniform_ls(w, wa, wb) + \
-                    stats.norm.logpdf(w, 0.16, 0.155)
+                    stats.norm.logpdf(w, mean_w, var_w)
                 log_gradient = deriv_w_norm(w)
                 
             elif self.prior_type['cp'] == 'free' and self.prior_type['w'] == 'free':
@@ -426,16 +451,19 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
 
         # optimizing width only
         elif w_opt is True and cp_opt is not True:
+
             w = np.exp(theta[0])
             wa = np.exp(self.kernel_.bounds[0,0])
             wb = np.exp(self.kernel_.bounds[0,1])
 
             # construct the prior and gradient
-            # if self.cutoff == 20:
             if self.prior_type['w'] == 'truncnorm':
-                deriv_w_norm = ndt.Derivative(deriv_w, step=1e-4, method='central')
+                if self.switch == 'sigmoid':
+                    deriv_w_norm = ndt.Derivative(deriv_w_sigmoid, step=1e-4, method='central')
+                elif self.switch == 'tanh':
+                    deriv_w_norm = ndt.Derivative(deriv_w_tanh, step=1e-4, method='central')
                 log_prior = self.luniform_ls(w, wa, wb) + \
-                    stats.norm.logpdf(w, 0.16, 0.155)
+                    stats.norm.logpdf(w, mean_w, var_w)  # mean_w unrecognised
                 log_gradient = deriv_w_norm(w)
             elif self.prior_type['w'] == 'free':
                 log_prior = self.luniform_ls(w, wa, wb)
@@ -450,7 +478,6 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             cpb = np.exp(self.kernel_.bounds[0,1])
 
             # construct the prior and gradient
-            # if self.cutoff == 20:
             if self.prior_type['cp'] == 'truncnorm':
                 deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
 
