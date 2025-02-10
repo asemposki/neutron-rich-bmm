@@ -1,3 +1,10 @@
+###################################
+#
+# This file sucks. It smells fear.
+# - A.C.S., 07.02.25
+#
+###################################
+
 # import necessary packages
 import numpy as np
 import scipy.integrate as scint
@@ -7,6 +14,7 @@ from scipy.interpolate import interp1d
 import numdifftools as ndt
 import matplotlib.pyplot as plt
 
+# from our work
 from pqcd_reworked import PQCD
 
 # global constants
@@ -184,7 +192,7 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
     return chiral_tr_final, pqcd_tr_final, training_set
     
 
-# define the speed of sound function 
+# define the speed of sound function (first issue here)
 def speed_of_sound(dens, pressure, edens=None, sat=False, bounds=68, integrate='forward', sampled=False):
 
     '''
@@ -222,11 +230,11 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, bounds=68, integrate='
         The dictonary of results for the 
         speed of sound (calculated using 1\mu dP/dn)
         and the lower and upper bounds of it at 
-        one sigma.
+        one sigma, returned when sampled is True.
         
     edens_full : dict
         The energy density dictionary of means and
-        variances returned when sampled == True.
+        variances returned when sampled is True.
         
     dens_arr : numpy.ndarray
         The densities corresponding to the 
@@ -257,15 +265,13 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, bounds=68, integrate='
     # using samples
     if sampled is True:
         pres = np.asarray(pressure['samples'])   # (nB, n_samples) shape
-        edens_0 = edens['samples'] #edens['mean']   ### how did we not catch this we neeeeeed to fix this...
+        edens_0 = edens['samples']
         
         # huge list for all sampled curves
         edens_full = []
-        p_dens_arr = []
         
         # collect the function together
         dn = dens[1] - dens[0]    # equally spaced
-        dens_part = dn / dens**2.0   # array of size n
         
         # interpolation and integration for each sample 
         for i in range(len(pres.T)):
@@ -315,9 +321,9 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, bounds=68, integrate='
     p_high = pressure['mean'] + zscore*pressure['std_dev']
         
     # extract the parameters for edens (for pqcd these will be full curves)
-    e_mean = edens['mean']
-    e_low = edens['lower']
-    e_high = edens['upper']
+    e_mean = edens['mean'][0]
+    e_low = edens['lower'][0]
+    e_high = edens['upper'][0]
         
     # define constant
     n0 = 0.164    # fm^-3
@@ -368,9 +374,9 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, bounds=68, integrate='
         
     # dict of energy densities
     edens_int = {
-        'mean': en_mean,
-        'lower': en_lower,
-        'upper': en_upper
+        'mean': np.asarray(en_mean),
+        'lower': np.asarray(en_lower),
+        'upper': np.asarray(en_upper)
     }
 
     # calculate deriv of pressure
@@ -416,9 +422,9 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, bounds=68, integrate='
     
     # collect mu into dict and return
     mu_dict = {
-        'mean':mu_mean,
-        'lower':mu_lower,
-        'upper':mu_upper
+        'mean': mu_mean,
+        'lower': mu_lower,
+        'upper': mu_upper
     }
 
     return dens_arr, cs2, cs2_log, edens_int, mu_dict
@@ -448,7 +454,7 @@ def select_draws(pressure_dict:dict):
     
     return np.asarray(valid_samples)
 
-# define function for the cs2 calculation in full
+# define function for the cs2 calculation
 def cs2_routine(gp_dict, sat_cut=None, bounds=68, plot=True, save_data=False):
     
     # unpack the dict
@@ -463,10 +469,14 @@ def cs2_routine(gp_dict, sat_cut=None, bounds=68, plot=True, save_data=False):
     elif gp_dict['true'] is not None and gp_dict['samples'] is None:
         pres_samples = gp_dict['true']
         sampling = True
-    elif gp_dict['true'] is None and gp_dict['samples'] is None:  ### we want this to work correctly! ###
+    
+    # this is the envelope calculation option (get this working!)
+    elif gp_dict['true'] is None and gp_dict['samples'] is None:
         sampling = False  
     else:
-        raise ValueError('Too many variables to assign.')
+        raise ValueError('Too many variables to assign. Send in only one sampling set.')
+    
+    print('Sampling?', sampling)
     
     #conversion for speed of sound
     convert_pqcd = np.load('../data/eos_data/pqcd_fg_data_NSM.npz')
@@ -482,13 +492,14 @@ def cs2_routine(gp_dict, sat_cut=None, bounds=68, plot=True, save_data=False):
     if sampling is True:
         pres_samples_unscaled = [pres_samples[:,i]*gp_cs2_convert_arr \
                                  for i in range(len(np.asarray(pres_samples).T))]
-
         pres_dict = {
             'dens': gp_dens[sat_cut:],
             'mean': gp_mean[sat_cut:]*gp_cs2_convert_arr[sat_cut:],
             'std_dev': gp_std[sat_cut:]*gp_cs2_convert_arr[sat_cut:],
             'samples': np.asarray(pres_samples_unscaled)[:, sat_cut:].T
         }
+
+    # envelope calculation
     else:
         pres_dict = {
             'dens': gp_dens[sat_cut:],
@@ -497,13 +508,18 @@ def cs2_routine(gp_dict, sat_cut=None, bounds=68, plot=True, save_data=False):
         }
     
     # energy density bounds (not changing) (backwards integration)
-    en_0 = 43656.4556069574
-    en_0_lower = 43510.21143367375
-    en_0_upper = 43797.873283570414
+    # en_0 = 43656.4556069574
+    # en_0_lower = 43510.21143367375     # these should be reversed...see what happens? or just use the sampled version...
+    # en_0_upper = 43797.873283570414    # yes this is the stuff we need at 68%!!!
 
-    # for draws, try new anchor point function
+    # try new anchor point function
+    pqcd_class = PQCD(X=1, Nf=3)
+    
+    en_0 = pqcd_class.anchor_point_edens(pres_dict['mean'], anchor=gp_dens[-1])
+    en_0_lower = pqcd_class.anchor_point_edens(pres_dict['mean']-pres_dict['std_dev'], anchor=gp_dens[-1])
+    en_0_upper = pqcd_class.anchor_point_edens(pres_dict['mean']+pres_dict['std_dev'], anchor=gp_dens[-1])
+
     if sampling is True:
-        pqcd_class = PQCD(X=1, Nf=3)
         edens_0_draw_arr = pqcd_class.anchor_point_edens(pres_dict['samples'], \
                                                          anchor=gp_dens[-1])
 
@@ -512,22 +528,22 @@ def cs2_routine(gp_dict, sat_cut=None, bounds=68, plot=True, save_data=False):
             'mean': en_0, 
             'lower': en_0_lower,
             'upper': en_0_upper,
-            'samples': edens_0_draw_arr
+            'samples': edens_0_draw_arr 
         }
             
-        # call speed of sound function (sampled = True automatically runs the integration downwards)
+        # call speed of sound function
         cs2_sampled, edens_full = speed_of_sound(gp_dens[sat_cut:], pres_dict, \
                                              edens_dict, sat=False, sampled=True)
-                
+                        
+    # envelope calculation
     else:
-        # make dict of values to send to speed of sound code
         edens_dict = {
             'mean': en_0, 
             'lower': en_0_lower,
             'upper': en_0_upper
         }
     
-        # call speed of sound function (not giving correct results currently!!!)
+        # call speed of sound function (cs2 crosses here...but if we sample, might be fine)
         _, cs2_sampled, _, edens_full, _ = speed_of_sound(gp_dens[sat_cut:], pres_dict, \
                                              edens_dict, sat=False, sampled=False, bounds=bounds, integrate='backward')
         
@@ -554,7 +570,10 @@ def cs2_routine(gp_dict, sat_cut=None, bounds=68, plot=True, save_data=False):
     # print statement to let user know it has finished
     print('Woo it is over!')
 
-    return pres_dict, edens_final_dict, cs2_sampled
+    if sampling is True:
+        return pres_dict, edens_final_dict, cs2_sampled
+    else:
+        return pres_dict, edens_full, cs2_sampled
 
 # plotter for speed of sound and draws
 def cs2_plots(edens_full, pres_dict, cs2_sampled, sat_cut):

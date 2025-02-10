@@ -1,5 +1,5 @@
 from operator import itemgetter
-from scipy.linalg import cho_solve, cholesky, solve_triangular
+from scipy.linalg import cho_solve, cholesky
 import numpy as np
 from scipy import stats
 import scipy as scipy
@@ -7,7 +7,7 @@ import warnings
 import numdifftools as ndt
 
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF, Kernel, RationalQuadratic
+from sklearn.gaussian_process.kernels import RBF
 from sklearn.gaussian_process.kernels import ConstantKernel as C
 from sklearn.base import clone
 from sklearn.preprocessing._data import _handle_zeros_in_scale
@@ -353,7 +353,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 self.log_prior = log_prior
                 log_total_gradient = log_likelihood_gradient + log_prior_gradient
             
-            # any stationary kernel choice (both hyperparameters are varied; can change this)
+            # any stationary kernel choice (both hyperparameters are varied; leave for now, not needed)
             else:
                 log_prior_value_ls = self.log_prior_ls(theta)
                 log_prior_value_sig = self.log_prior_sig(theta)
@@ -387,10 +387,10 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         cp_opt = kwargs['cp_opt']
         w_opt = kwargs['w_opt']
 
-        # means and variances of width
+        # means and variances of width (prior choice)
         if self.switch == 'sigmoid':
             mean_w = 0.16
-            var_w = 0.155
+            var_w = 0.155 # these are the std dev
         elif self.switch == 'tanh':
             mean_w = 0.32
             var_w = 0.31
@@ -403,7 +403,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         def deriv_w_tanh(w):
             return stats.norm.logpdf(w, 0.32, 0.31)
                     
-        # optimizing both parameters (prior choice can be included here!)
+        # optimizing both parameters
         if cp_opt is True and w_opt is True:
             cp = np.exp(theta[0])
             w = np.exp(theta[1])
@@ -463,7 +463,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 elif self.switch == 'tanh':
                     deriv_w_norm = ndt.Derivative(deriv_w_tanh, step=1e-4, method='central')
                 log_prior = self.luniform_ls(w, wa, wb) + \
-                    stats.norm.logpdf(w, mean_w, var_w)  # mean_w unrecognised
+                    stats.norm.logpdf(w, mean_w, var_w)
                 log_gradient = deriv_w_norm(w)
             elif self.prior_type['w'] == 'free':
                 log_prior = self.luniform_ls(w, wa, wb)
@@ -480,7 +480,6 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             # construct the prior and gradient
             if self.prior_type['cp'] == 'truncnorm':
                 deriv_cp_norm = ndt.Derivative(deriv_cp, step=1e-4, method='central')
-
                 log_prior = self.luniform_ls(cp, cpa, cpb) + \
                     stats.norm.logpdf(cp, 0.98, 0.33)
                 log_gradient = deriv_cp_norm(cp)

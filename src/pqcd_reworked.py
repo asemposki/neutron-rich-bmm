@@ -577,7 +577,6 @@ class PQCD:
         return pressure_n
     
     
-    # create function for the pQCD energy density anchor points 
     # (samples assumed format: [dens, samples])
     def anchor_point_edens(self, samples, anchor):
 
@@ -588,19 +587,26 @@ class PQCD:
         n_q = self.n_anchor * 3.0  # n_q [fm^-3]
 
         # convert to GeV^3 for mu_q
-        conversion_fm3 = ((1000.0)**(3.0))/((197.33)**(3.0)) # [fm^-3]  (do the opposite of this)
+        conversion_fm3 = ((1000.0)**(3.0))/((197.327)**(3.0)) # [fm^-3]  (do the opposite of this)
         n_q = n_q/conversion_fm3  # [GeV^3]
-
-        # invert to get mu
-        _, mu_n, _ = self.inversion(n_mu=n_q.reshape(-1,1))  # [GeV] # these are quark chemical potentials
-
-        # take mu and get MeV (and baryon) version
-        mu = mu_n * 1e3
         
-        # now calculate the edens array using these pieces (assuming last entry is anchor point)
+        # fix to work for one sample
+        if type(n_q) is float:
+            n_q = np.array([n_q])
+
+        _, _, mu_FG = self.inversion(n_mu=n_q.reshape(-1,1))  # [GeV] # these are quark chemical potentials
+        
+        mU_FG = mu_FG[:, None]
+        
+        # fix for one sample
+        if samples.T.ndim == 1:
+            samples = samples.reshape(-1,1)
+
+        # calculate the edens at the anchor point   # MeV/fm^3
         edens_0_array = np.zeros([len(samples.T)])
         for i in range(len(samples.T)):
-            edens_0_array[i] = 3.0 * self.n_anchor * mu - samples[-1,i]  # needs to be quark version, but MeV/fm^3!
+            edens_0_array[i] = 3.0 * self.n_anchor * 1000 * (mu_FG + self.mu_1(mU_FG)[:,0] 
+                                                      + self.mu_2(mU_FG)[:,0]) - samples[-1,i]  # not sure if this is full...
 
         return edens_0_array
 
