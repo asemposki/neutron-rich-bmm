@@ -2,9 +2,6 @@
 #
 # This file sucks. It smells fear.
 # - A.C.S., 07.02.25
-# 
-# Not anymore. It's been defeated.
-# - A.C.S., 11.02.25
 #
 ###################################
 
@@ -193,41 +190,277 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
     print('Cov shape:', training_set['cov'].shape)
     
     return chiral_tr_final, pqcd_tr_final, training_set
+    
 
-
-def energy_density(gp_dict, sat_cut=0, bounds=68, integrate='backward'):
+# define the speed of sound function (first issue here)
+def speed_of_sound(dens, pressure, edens=None, sat=False, bounds=68, integrate='forward', sampled=False):
 
     '''
-    Calculation of the energy density from the pressure and the number
-    density of the EOS.
+    Function to evaluate the speed of sound of
+    a system given the pressure, number density,
+    and initial parameters for the energy
+    density integration. 
 
     Parameters:
     -----------
-    dens (numpy.array) : The baryon number density of the system in fm^-3.
+    dens : numpy 1d array
+        The number density of the system.
+    pressure : dict
+        The dictonary of pressure means
+        and standard deviations from the system.
+    edens : dict
+        The dictionary of energy density 
+        means and standard deviations for a 
+        specific starting point in density.
+    sat : bool
+        Starting at saturation density (0.16 fm^-3)
+        or not. Default is False.
+    integrate : str
+        Decision to integrate forward or backward.
+        Default is 'forward'.
+    sampled: bool
+        If using samples from the speed of sound, run
+        the std and mean using nanmean and nanstd from
+        numpy instead of computing envelopes.
+        Default is 'False'. 
     
-    gp_dict (dict) : The pressure mean, standard deviation, and samples (optional).
-    
-    edens (dict) : The energy density boundary conditions from the pQCD calculation.
-    
-    sat_cut (int) : If starting from saturation, set the index. Default is 0 (no cut).
-    
-    integrate (str) : If integrating backward, 'backward' and the appropriate edens
-        dict should be supplied. Else, default is 'forward'.
-
     Returns:
     --------
-    edens_full (dict) : The dictionary of calculated energy density values.
-
-    pres_dict (dict) : The dictionary of unscaled pressure values. 
+    cs2 : dict
+        The dictonary of results for the 
+        speed of sound (calculated using 1\mu dP/dn)
+        and the lower and upper bounds of it at 
+        one sigma, returned when sampled is True.
+        
+    edens_full : dict
+        The energy density dictionary of means and
+        variances returned when sampled is True.
+        
+    dens_arr : numpy.ndarray
+        The densities corresponding to the 
+        speed of sound calculation (if sat is True, 
+        this will reflect from saturation up), returned
+        when sampled is False.
+        
+    cs2_log : dict
+        The dict of speed of sound values from using
+        the n * dlog(mu)/dn method. Returned when 
+        sampled is False.
+        
+    edens_int : dict
+        The dict of energy densities, returned when 
+        sampled is False.
+        
+    mu_dict : dict
+        The dict of chemical potential values, returned
+        when sampled is False.
     '''
 
+    # check for saturation point integration
+    if sat is True:
+        dens_arr = np.linspace(0.164, 16.4, 1200)
+    else:
+        dens_arr = dens
+        
+    # using samples
+    if sampled is True:
+        pres = np.asarray(pressure['samples'])   # (nB, n_samples) shape
+        edens_0 = edens['samples']
+        
+        # huge list for all sampled curves
+        edens_full = []
+        
+        # collect the function together
+        dn = dens[1] - dens[0]    # equally spaced
+        
+        # interpolation and integration for each sample 
+        for i in range(len(pres.T)):
+            
+            # empty list for storing (re-initialize to dump old data)
+            en_samples = np.zeros(len(pres))
+            
+            # outer term (not changing with n)
+            outer = (edens_0[i]/dens[-1])  # adding change of integration constant w/each sample
+
+            # running integration backward from pQCD
+            for j in range(len(dens)):
+                
+                # Simpson's Rule integration
+                en_samples[j] = dens[j] * (outer - scint.simps((pres[j:, i]/dens[j:]**2.0), dens[j:]))
+
+            edens_full.append(en_samples)   # shape (n_samples, nB)
+                        
+        # now calculate chemical potential and derivative
+        mu_samples = np.asarray([((np.asarray(edens_full)[i,:] + pres[:,i]))/dens for \
+                                 i in range(len(edens_full))])   # samples, nB
+
+        # get the results using 1/mu dP/dn instead (more stable)
+        dpdn_samples = np.gradient(pres, dn, axis=0, edge_order=2)
+                
+        cs2_samples = np.asarray([(mu_samples[i,:])**(-1.0) * dpdn_samples[:,i] \
+                                  for i in range(len(edens_full))])
+        
+        # get mean, std_dev estimations out, store and return
+        cs2_mean = np.nanmean(cs2_samples, axis=0)  # run over samples
+        cs2_std = np.nanstd(cs2_samples, axis=0)
+                
+        cs2 = {
+            'mean': cs2_mean,
+            'std': cs2_std,
+            'samples': cs2_samples
+        }
+        
+        return cs2, edens_full
+    
+    # first, make bounds flexible
+    zscore = stats.norm.ppf((1.0 + (bounds/100.0))/2.0)
+    
+    # extract the necessary information
+    p_mean = pressure['mean']
+    p_low = pressure['mean'] - zscore*pressure['std_dev']
+    p_high = pressure['mean'] + zscore*pressure['std_dev']
+        
+    # extract the parameters for edens (for pqcd these will be full curves)
+    e_mean = edens['mean'][0]
+    e_low = edens['lower'][0]
+    e_high = edens['upper'][0]
+        
+    # define constant
+    n0 = 0.164    # fm^-3
+
+    # calculate the interpolants
+    p_mean_interp = interp1d(dens, (p_mean), kind='cubic', \
+                            fill_value='extrapolate')
+    p_lower_interp = interp1d(dens, (p_low), kind='cubic', \
+                            fill_value='extrapolate')
+    p_upper_interp = interp1d(dens, (p_high), kind='cubic', \
+                            fill_value='extrapolate')
+       
+    # define internal functions for integration
+    def pres_mean(n):
+        return p_mean_interp(n) / (n)**2.0
+    def pres_lower(n):
+        return p_lower_interp(n) / (n)**2.0
+    def pres_upper(n):
+        return p_upper_interp(n) / (n)**2.0
+
+    # perform integration
+    en_mean = []
+    en_lower = []
+    en_upper = []
+        
+    # integrating forwards
+    if integrate == 'forward':
+        
+        for n in dens_arr:
+            en_mean.append(n*(e_mean/dens_arr[0] + \
+                            scint.quad(lambda x : pres_mean(x), dens_arr[0], n, epsabs=1e-10, epsrel=1e-10)[0]))
+            
+            en_lower.append(n*(e_low/dens_arr[0] + \
+                            scint.quad(lambda x : pres_lower(x), dens_arr[0], n, epsabs=1e-10, epsrel=1e-10)[0]))
+            en_upper.append(n*(e_high/dens_arr[0] + \
+                            scint.quad(lambda x : pres_upper(x), dens_arr[0], n, epsabs=1e-10, epsrel=1e-10)[0]))
+                               
+    # try integrating backwards
+    elif integrate == 'backward':
+        
+        for n in dens_arr:
+            en_mean.append(n*(e_mean/dens_arr[-1] - \
+                            scint.quad(lambda x : pres_mean(x), n, dens_arr[-1], epsabs=1e-10, epsrel=1e-10)[0]))
+            en_lower.append(n*(e_low/dens_arr[-1] - \
+                            scint.quad(lambda x : pres_lower(x), n, dens_arr[-1], epsabs=1e-10, epsrel=1e-10)[0]))
+            en_upper.append(n*(e_high/dens_arr[-1] - \
+                            scint.quad(lambda x : pres_upper(x), n, dens_arr[-1], epsabs=1e-10, epsrel=1e-10)[0]))
+        
+    # dict of energy densities
+    edens_int = {
+        'mean': np.asarray(en_mean),
+        'lower': np.asarray(en_lower),
+        'upper': np.asarray(en_upper)
+    }
+
+    # calculate deriv of pressure
+    dpdn_mean = ndt.Derivative(p_mean_interp, step=1e-6, method='central')
+    dpdn_lower = ndt.Derivative(p_lower_interp, step=1e-6, method='central')
+    dpdn_upper = ndt.Derivative(p_upper_interp, step=1e-6, method='central')
+    
+    # calculate the chemical potential
+    mu_mean = (en_mean + p_mean_interp(dens_arr))/dens_arr
+    mu_lower = (en_lower + p_lower_interp(dens_arr))/dens_arr
+    mu_upper = (en_upper + p_upper_interp(dens_arr))/dens_arr
+    
+    # calculate the log of the chemical potential
+    log_mu_mean = np.log(mu_mean)
+    log_mu_lower = np.log(mu_lower)
+    log_mu_upper = np.log(mu_upper)
+    
+    # calculate speed of sound using chemical potential
+    # at desired density array
+    cs2_mu_mean = dpdn_mean(dens_arr) / mu_mean
+    cs2_mu_lower = dpdn_lower(dens_arr) / mu_upper
+    cs2_mu_upper = dpdn_upper(dens_arr) / mu_lower
+           
+    # calculate speed of sound using log(mu)
+    # at desired density array
+    cs2_log_mean = dens_arr * np.gradient(log_mu_mean, dens_arr, edge_order=2)
+    cs2_log_lower = dens_arr * np.gradient(log_mu_lower, dens_arr, edge_order=2)
+    cs2_log_upper = dens_arr * np.gradient(log_mu_upper, dens_arr, edge_order=2)
+    
+    # collect into dict and return
+    cs2 = {
+        'mean' : cs2_mu_mean,
+        'lower' : cs2_mu_lower,
+        'upper' : cs2_mu_upper
+    }
+    
+    # collect log method and return
+    cs2_log = {
+        'mean': cs2_log_mean,
+        'lower': cs2_log_lower,
+        'upper': cs2_log_upper
+    }
+    
+    # collect mu into dict and return
+    mu_dict = {
+        'mean': mu_mean,
+        'lower': mu_lower,
+        'upper': mu_upper
+    }
+
+    return dens_arr, cs2, cs2_log, edens_int, mu_dict
+
+
+def select_draws(pressure_dict:dict):
+
+    # pull samples
+    samples = pressure_dict['samples']   # [dens, draws]
+    mean = pressure_dict['mean']
+    std = pressure_dict['std_dev']
+    lower_cutoff = mean - std
+    upper_cutoff = mean + std
+
+    # craft list for our new samples
+    reduced_samples = samples.copy()
+    rows_2_remove = []
+
+    # run through all samples and densities
+    for i, sample in enumerate(samples.T):
+        result = sample < lower_cutoff
+        result2 = sample > upper_cutoff
+        if True in result or True in result2:
+            rows_2_remove.append(i)
+    
+    valid_samples = np.delete(reduced_samples, rows_2_remove, axis=1)
+    
+    return np.asarray(valid_samples)
+
+# define function for the cs2 calculation
+def cs2_routine(gp_dict, sat_cut=None, bounds=68, plot=True, save_data=False):
+    
     # unpack the dict
     gp_dens = gp_dict['dens']
     gp_mean = gp_dict['mean']
     gp_std = gp_dict['std_dev']
-
-    # define the dens variable here
-    dens = gp_dens
     
     # set up the samples
     if gp_dict['samples'] is not None and gp_dict['true'] is None:
@@ -237,11 +470,13 @@ def energy_density(gp_dict, sat_cut=0, bounds=68, integrate='backward'):
         pres_samples = gp_dict['true']
         sampling = True
     
-    # this is the envelope calculation option
+    # this is the envelope calculation option (get this working!)
     elif gp_dict['true'] is None and gp_dict['samples'] is None:
         sampling = False  
     else:
         raise ValueError('Too many variables to assign. Send in only one sampling set.')
+    
+    print('Sampling?', sampling)
     
     #conversion for speed of sound
     convert_pqcd = np.load('../data/eos_data/pqcd_fg_data_NSM.npz')
@@ -271,313 +506,74 @@ def energy_density(gp_dict, sat_cut=0, bounds=68, integrate='backward'):
             'mean': gp_mean[sat_cut:]*gp_cs2_convert_arr[sat_cut:],
             'std_dev': gp_std[sat_cut:]*gp_cs2_convert_arr[sat_cut:]
         }
+    
+    # energy density bounds (not changing) (backwards integration)
+    # en_0 = 43656.4556069574
+    # en_0_lower = 43510.21143367375     # these should be reversed...see what happens? or just use the sampled version...
+    # en_0_upper = 43797.873283570414    # yes this is the stuff we need at 68%!!!
 
-    # call anchor point function for energy density boundary conditions
+    # try new anchor point function
     pqcd_class = PQCD(X=1, Nf=3)
-        
-    # using samples
+    
+    en_0 = pqcd_class.anchor_point_edens(pres_dict['mean'], anchor=gp_dens[-1])
+    en_0_lower = pqcd_class.anchor_point_edens(pres_dict['mean']-pres_dict['std_dev'], anchor=gp_dens[-1])
+    en_0_upper = pqcd_class.anchor_point_edens(pres_dict['mean']+pres_dict['std_dev'], anchor=gp_dens[-1])
+
     if sampling is True:
         edens_0_draw_arr = pqcd_class.anchor_point_edens(pres_dict['samples'], \
                                                          anchor=gp_dens[-1])
 
         # make dict of values to send to speed of sound code
         edens_dict = {
+            'mean': en_0, 
+            'lower': en_0_lower,
+            'upper': en_0_upper,
             'samples': edens_0_draw_arr 
         }
-
-        # set up sampling routine calculation
-        pres = np.asarray(pres_dict['samples'])   # (nB, n_samples) shape
-        edens_0 = edens_dict['samples']
-        
-        # huge list for all sampled curves
-        edens_full = []
-        
-        # interpolation and integration for each sample 
-        for i in range(len(pres.T)):
             
-            # empty list for storing (re-initialize to dump old data)
-            en_samples = np.zeros(len(pres))
-            
-            # outer term (not changing with n)
-            outer = (edens_0[i]/dens[-1])  # adding change of integration constant w/each sample
-
-            # running integration backward from pQCD
-            for j in range(len(dens)):
-                
-                # Simpson's Rule integration
-                en_samples[j] = dens[j] * (outer - scint.simps((pres[j:, i]/dens[j:]**2.0), dens[j:]))
-
-            edens_full.append(en_samples)   # shape (n_samples, nB)
-
+        # call speed of sound function
+        cs2_sampled, edens_full = speed_of_sound(gp_dens[sat_cut:], pres_dict, \
+                                             edens_dict, sat=False, sampled=True)
+                        
+    # envelope calculation
+    else:
+        edens_dict = {
+            'mean': en_0, 
+            'lower': en_0_lower,
+            'upper': en_0_upper
+        }
+    
+        # call speed of sound function (cs2 crosses here...but if we sample, might be fine)
+        _, cs2_sampled, _, edens_full, _ = speed_of_sound(gp_dens[sat_cut:], pres_dict, \
+                                             edens_dict, sat=False, sampled=False, bounds=bounds, integrate='backward')
+        
+    if sampling is True:
         # get mean and std_dev for use later
         edens_mean = np.nanmean(edens_full, axis=0)
         edens_std = np.nanstd(edens_full, axis=0)
-    
-        # construct the final dict with all needed items
+        
         edens_final_dict = {
             'mean': edens_mean,
             'std': edens_std,
             'samples': np.asarray(edens_full)
         }
-
-        print('Energy density calculation complete!')
-
-        return edens_final_dict, pres_dict
-
-    elif sampling is False:
-
-        # density array (fix later if we wish)
-        dens_arr = dens
+    
+    # plot if desired
+    if plot is True:
+        cs2_plots(edens_full, pres_dict, cs2_sampled, sat_cut)
         
-        # first, make bounds flexible
-        zscore = stats.norm.ppf((1.0 + (bounds/100.0))/2.0)
+    # save for plotting later
+    if save_data is True:
+        np.savez('../data/eos_data/cs2_gp_40.npz', dens=gp_dens[sat_cut:], \
+                 mean=cs2_sampled['mean'], std=cs2_sampled['std'], samples=cs2_sampled['samples'])
         
-        # extract the necessary information
-        p_mean = pres_dict['mean']
-        p_low = pres_dict['mean'] - zscore*pres_dict['std_dev']
-        p_high = pres_dict['mean'] + zscore*pres_dict['std_dev']
+    # print statement to let user know it has finished
+    print('Woo it is over!')
 
-        # calculate the interpolants
-        p_mean_interp = interp1d(dens, (p_mean), kind='cubic', \
-                                fill_value='extrapolate')
-        p_lower_interp = interp1d(dens, (p_low), kind='cubic', \
-                                fill_value='extrapolate')
-        p_upper_interp = interp1d(dens, (p_high), kind='cubic', \
-                                fill_value='extrapolate')
-        
-        # define internal functions for integration
-        def pres_mean(n):
-            return p_mean_interp(n) / (n)**2.0
-        def pres_lower(n):
-            return p_lower_interp(n) / (n)**2.0
-        def pres_upper(n):
-            return p_upper_interp(n) / (n)**2.0
-
-        # perform integration
-        en_mean = []
-        en_lower = []
-        en_upper = []
-            
-        # integrating forwards
-        if integrate == 'forward':
-
-            # calculate the boundary conditions for forward integration
-            e_mean = pqcd_class.anchor_point_edens(pres_dict['mean'], anchor=gp_dens[0])
-            e_low = pqcd_class.anchor_point_edens(pres_dict['mean']-pres_dict['std_dev'], anchor=gp_dens[0])
-            e_high = pqcd_class.anchor_point_edens(pres_dict['mean']+pres_dict['std_dev'], anchor=gp_dens[0])
-            
-            for n in dens_arr:
-                en_mean.append(n*(e_mean/dens_arr[0] + \
-                                scint.quad(lambda x : pres_mean(x), dens_arr[0], n, epsabs=1e-10, epsrel=1e-10)[0]))
-                
-                en_lower.append(n*(e_low/dens_arr[0] + \
-                                scint.quad(lambda x : pres_lower(x), dens_arr[0], n, epsabs=1e-10, epsrel=1e-10)[0]))
-                en_upper.append(n*(e_high/dens_arr[0] + \
-                                scint.quad(lambda x : pres_upper(x), dens_arr[0], n, epsabs=1e-10, epsrel=1e-10)[0]))
-                                
-        # try integrating backwards
-        elif integrate == 'backward':
-
-            # calculate the boundary conditions for the energy density for the envelopes
-            e_mean = pqcd_class.anchor_point_edens(pres_dict['mean'], anchor=gp_dens[-1])
-            e_low = pqcd_class.anchor_point_edens(pres_dict['mean']-pres_dict['std_dev'], anchor=gp_dens[-1])
-            e_high = pqcd_class.anchor_point_edens(pres_dict['mean']+pres_dict['std_dev'], anchor=gp_dens[-1])
-            
-            for n in dens_arr:
-                en_mean.append(n*(e_mean/dens_arr[-1] - \
-                                scint.quad(lambda x : pres_mean(x), n, dens_arr[-1], epsabs=1e-10, epsrel=1e-10)[0]))
-                en_lower.append(n*(e_low/dens_arr[-1] - \
-                                scint.quad(lambda x : pres_lower(x), n, dens_arr[-1], epsabs=1e-10, epsrel=1e-10)[0]))
-                en_upper.append(n*(e_high/dens_arr[-1] - \
-                                scint.quad(lambda x : pres_upper(x), n, dens_arr[-1], epsabs=1e-10, epsrel=1e-10)[0]))
-            
-        # dict of energy densities (might need to reshape again later)
-        edens_full = {
-            'mean': np.asarray(en_mean)[:,0],
-            'lower': np.asarray(en_lower)[:,0],
-            'upper': np.asarray(en_upper)[:,0]
-        }
-    
-        return edens_full, pres_dict
-    
-
-# define the speed of sound function
-def speed_of_sound(pressure, edens_full, sat=False, sampled=False, bounds=68, cs2_type='mu'):
-
-    '''
-    Function to evaluate the speed of sound of
-    a system given the pressure, number density,
-    and initial parameters for the energy
-    density integration. 
-
-    Parameters:
-    -----------
-    dens (numpy.1darray) : The number density of the system.
-    
-    pressure (dict) : The dictionary of pressures. The assumption
-        is that they are already in MeV/fm^3.
-
-    sat (bool) : If we are using saturation as a density 
-        cutoff or not. Default is False.
-    
-    sampled (bool) : Whether we are using samples or not.
-        Default is False.
-    
-    bounds (int) : If sampled is False, bounds for the intervals.
-        Default is 68%.
-    
-    cs2_type (str) : The type of calculation to be performed. 
-        Options are 'mu' (using chemical potential and first
-        derivative of P wrt n) and 'log' (using the logarithmic
-        derivative of mu and n).
-
-    Returns:
-    --------
-    cs2 (dict) : The dictonary of results for the 
-        speed of sound (calculated using 1\mu dP/dn)
-        and the lower and upper bounds of it at 
-        one sigma, returned when sampled is True.
-        
-    mu (numpy.ndarray, dict) : The chemical potential
-        values produced during the speed of sound
-        calculation, in an array or dict depending on the
-        sampling choice.
-    '''
-
-    # density
-    dens = pressure['dens']
-
-    # check for saturation point integration
-    if sat is True:
-        dens_arr = np.linspace(0.164, 16.4, 1200)
+    if sampling is True:
+        return pres_dict, edens_final_dict, cs2_sampled
     else:
-        dens_arr = dens
-        
-    # using samples
-    if sampled is True:
-        pres = np.asarray(pressure['samples'])   # (nB, n_samples) shape
-        edens = np.asarray(edens_full['samples']) # (n_samples, nB) shape
-        
-        # collect the function together
-        dn = dens[1] - dens[0]    # equally spaced
-                        
-        # now calculate chemical potential and derivative
-        mu_samples = np.asarray([(edens[i,:] + pres[:,i])/dens for \
-                                 i in range(len(edens))])   # samples, nB
-        
-        # get the results using 1/mu dP/dn instead (more stable)
-        dpdn_samples = np.gradient(pres, dn, axis=0, edge_order=2)
-                
-        cs2_samples = np.asarray([(mu_samples[i,:])**(-1.0) * dpdn_samples[:,i] \
-                                  for i in range(len(edens))])
-        
-        # get mean, std_dev estimations out, store and return
-        cs2_mean = np.nanmean(cs2_samples, axis=0)  # run over samples
-        cs2_std = np.nanstd(cs2_samples, axis=0)
-                
-        cs2 = {
-            'mean': cs2_mean,
-            'std': cs2_std,
-            'samples': cs2_samples
-        }
-        
-        return cs2, mu_samples
-    
-    elif sampled is False:
-
-        # fetch interpolants
-        zscore = stats.norm.ppf((1.0 + (bounds/100.0))/2.0)
-        
-        # extract the necessary information
-        p_mean = pressure['mean']
-        p_low = pressure['mean'] - zscore*pressure['std_dev']
-        p_high = pressure['mean'] + zscore*pressure['std_dev']
-
-        # calculate the interpolants
-        p_mean_interp = interp1d(dens, (p_mean), kind='cubic', \
-                                fill_value='extrapolate')
-        p_lower_interp = interp1d(dens, (p_low), kind='cubic', \
-                                fill_value='extrapolate')
-        p_upper_interp = interp1d(dens, (p_high), kind='cubic', \
-                                fill_value='extrapolate')
-
-        # calculate deriv of pressure
-        dpdn_mean = ndt.Derivative(p_mean_interp, step=1e-6, method='central')
-        dpdn_lower = ndt.Derivative(p_lower_interp, step=1e-6, method='central')
-        dpdn_upper = ndt.Derivative(p_upper_interp, step=1e-6, method='central')
-        
-        # calculate the chemical potential
-        mu_mean = (edens_full['mean'] + p_mean_interp(dens_arr))/dens_arr
-        mu_lower = (edens_full['lower'] + p_lower_interp(dens_arr))/dens_arr
-        mu_upper = (edens_full['upper'] + p_upper_interp(dens_arr))/dens_arr
-
-        # collect mu into dict and return
-        mu = {
-            'mean': mu_mean,
-            'lower': mu_lower,
-            'upper': mu_upper
-        }
-        
-        # calculate the speed of sound using mu
-        if cs2_type == 'mu':
-            cs2_mu_mean = dpdn_mean(dens_arr) / mu_mean
-            cs2_mu_lower = dpdn_lower(dens_arr) / mu_upper
-            cs2_mu_upper = dpdn_upper(dens_arr) / mu_lower
-
-            # collect into dict and return
-            cs2 = {
-                'mean' : cs2_mu_mean,
-                'lower' : cs2_mu_lower,
-                'upper' : cs2_mu_upper
-            }
-
-            return cs2, mu
-
-        # calculate speed of sound using logs
-        elif cs2_type == 'log':
-            log_mu_mean = np.log(mu_mean)
-            log_mu_lower = np.log(mu_lower)
-            log_mu_upper = np.log(mu_upper)
-                
-            # calculate speed of sound using log(mu)
-            cs2_log_mean = dens_arr * np.gradient(log_mu_mean, dens_arr, edge_order=2)
-            cs2_log_lower = dens_arr * np.gradient(log_mu_lower, dens_arr, edge_order=2)
-            cs2_log_upper = dens_arr * np.gradient(log_mu_upper, dens_arr, edge_order=2)
-            
-            # collect log method and return
-            cs2_log = {
-                'mean': cs2_log_mean,
-                'lower': cs2_log_lower,
-                'upper': cs2_log_upper
-            }
-
-            return cs2_log, mu
-
-
-def select_draws(pressure_dict:dict):
-
-    # pull samples
-    samples = pressure_dict['samples']   # [dens, draws]
-    mean = pressure_dict['mean']
-    std = pressure_dict['std_dev']
-    lower_cutoff = mean - std
-    upper_cutoff = mean + std
-
-    # craft list for our new samples
-    reduced_samples = samples.copy()
-    rows_2_remove = []
-
-    # run through all samples and densities
-    for i, sample in enumerate(samples.T):
-        result = sample < lower_cutoff
-        result2 = sample > upper_cutoff
-        if True in result or True in result2:
-            rows_2_remove.append(i)
-    
-    valid_samples = np.delete(reduced_samples, rows_2_remove, axis=1)
-    
-    return np.asarray(valid_samples)
-
+        return pres_dict, edens_full, cs2_sampled
 
 # plotter for speed of sound and draws
 def cs2_plots(edens_full, pres_dict, cs2_sampled, sat_cut):
