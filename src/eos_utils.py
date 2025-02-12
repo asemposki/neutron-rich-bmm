@@ -363,14 +363,16 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, bounds=68, integrate='
                                
     # try integrating backwards
     elif integrate == 'backward':
+
+        tol = 1e-08
         
         for n in dens_arr:
             en_mean.append(n*(e_mean/dens_arr[-1] - \
-                            scint.quad(lambda x : pres_mean(x), n, dens_arr[-1], epsabs=1e-10, epsrel=1e-10)[0]))
+                            scint.quad(lambda x : pres_mean(x), n, dens_arr[-1], epsabs=tol, epsrel=tol)[0]))
             en_lower.append(n*(e_low/dens_arr[-1] - \
-                            scint.quad(lambda x : pres_lower(x), n, dens_arr[-1], epsabs=1e-10, epsrel=1e-10)[0]))
+                            scint.quad(lambda x : pres_lower(x), n, dens_arr[-1], epsabs=tol, epsrel=tol)[0]))
             en_upper.append(n*(e_high/dens_arr[-1] - \
-                            scint.quad(lambda x : pres_upper(x), n, dens_arr[-1], epsabs=1e-10, epsrel=1e-10)[0]))
+                            scint.quad(lambda x : pres_upper(x), n, dens_arr[-1], epsabs=tol, epsrel=tol)[0]))
         
     # dict of energy densities
     edens_int = {
