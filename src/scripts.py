@@ -1,17 +1,13 @@
+import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from matplotlib.patches import Ellipse
+from matplotlib.patches import Ellipse, Rectangle
 import matplotlib.transforms as transforms
 from matplotlib import legend_handler
-from matplotlib.legend_handler import HandlerLine2D
+from matplotlib.legend_handler import HandlerLine2D, HandlerBase
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator, MaxNLocator
-import numpy as np
-
-# import sys
-# sys.path.append('../buqeyenm/nuclear-matter-convergence/')  # decouple
-# from nuclear_matter.graphs import *
-# from nuclear_matter import fermi_momentum
+from matplotlib.lines import Line2D
 
 
 def setup_rc_params(presentation=False):
@@ -294,7 +290,7 @@ def compute_filled_handles(colors, light_colors, dark_colors):
     return handles
 
 
-def add_top_order_legend(fig, ax_left, ax_right, orders, colors, light_colors, dark_colors):
+def add_top_order_legend(fig, ax_left, ax_right, orders, colors, light_colors, dark_colors, ncol=4):
     fig.canvas.draw()  # Must draw to get positions right before getting locations
     # Get the corner of the upper right plot in display coordinates
     upper_right_display = ax_right.transAxes.transform((1, 1))
@@ -303,11 +299,49 @@ def add_top_order_legend(fig, ax_left, ax_right, orders, colors, light_colors, d
     handlers_ords = compute_filled_handles(colors, light_colors, dark_colors)
     # Must use axes[0,0] legend for constrained layout to work with it
     return ax_left.legend(
-        handlers_ords, orders, ncol=4,
+        handlers_ords, orders, ncol=ncol,
         loc='lower left', bbox_to_anchor=(0, 1.02, upper_right_axes00[0], 1.),
         mode='expand',
         columnspacing=0,
         handletextpad=0.5,
         fancybox=False, borderaxespad=0,
         handler_map={tuple: OrderBandsHandler()}
+    )
+
+
+def add_uncertainty_legend(fig, ax, legend_entries, error_bar_entries=None, fontsize=18, loc='lower right', alpha=1.0):
+    """
+    Adds a legend to a Matplotlib axis with combined uncertainty bands and mean lines.
+
+    Parameters:
+        ax : matplotlib.axes.Axes
+            The axis to which the legend should be added.
+        legend_entries : list of tuples
+            Each tuple should be ((uncertainty_color, mean_color), "Label Text").
+    """
+    
+    # Custom legend handler for combined uncertainty band + mean line
+    class HandlerPatchLine(HandlerBase):
+        def create_artists(self, legend, orig_handle, x0, y0, width, height, fontsize, trans):
+            uncertainty_color, mean_color = orig_handle
+            rect = Rectangle([x0, y0], width, height, facecolor=uncertainty_color, alpha=alpha, transform=trans)
+            line = Line2D([x0, x0 + width], [y0 + height / 2, y0 + height / 2], color=mean_color, linewidth=2, transform=trans)
+            return [rect, line]
+        
+    handles=[entry[0] for entry in legend_entries] 
+    labels=[entry[1] for entry in legend_entries]
+        
+    if error_bar_entries:
+        for marker_style, color, label in error_bar_entries:
+            handles.append(Line2D([0], [0], marker=marker_style, color=color, \
+                                  markersize=8, linestyle='None'))
+            labels.append(label)
+
+    ax.legend(
+        handles=handles, 
+        labels=labels,
+        handler_map={tuple: HandlerPatchLine()},
+        fontsize=fontsize,
+        loc=loc,
+        frameon=False
     )
