@@ -127,9 +127,9 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
         chiral_tr_final = {}
         for key,i in chiral_tr.items():
             if chiral_tr[key].ndim == 1:
-                chiral_tr_final[key] = chiral_tr[key][2::20]
+                chiral_tr_final[key] = chiral_tr[key][2::20]  # [2::20]
             elif chiral_tr[key].ndim == 2:
-                chiral_tr_final[key] = chiral_tr[key][2::20, 2::20] 
+                chiral_tr_final[key] = chiral_tr[key][2::20, 2::20]   # [2::20]
     
     elif matter == 'SNM':
         chiral_tr_final = {}
@@ -169,9 +169,9 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
     pqcd_tr_final = {}
     for key,i in pqcd_tr.items():
         if pqcd_tr[key].ndim == 1:
-            pqcd_tr_final[key] = pqcd_tr[key][::50] #[::30] for adding more points for Matern kernel
+            pqcd_tr_final[key] = pqcd_tr[key][::40] #[::30] for adding more points for Matern kernel
         elif pqcd_tr[key].ndim == 2:
-            pqcd_tr_final[key] = pqcd_tr[key][::50, ::50] #[::30, ::30]
+            pqcd_tr_final[key] = pqcd_tr[key][::40, ::40] #[::30, ::30]
 
     print(chiral_tr_final['dens'].shape, chiral_tr_final['mean'].shape, \
           chiral_tr_final['std'].shape, chiral_tr_final['cov'].shape)
@@ -324,9 +324,6 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, bounds=68, integrate='
     e_mean = edens['mean'][0]
     e_low = edens['lower'][0]
     e_high = edens['upper'][0]
-        
-    # define constant
-    n0 = 0.164    # fm^-3
 
     # calculate the interpolants
     p_mean_interp = interp1d(dens, (p_mean), kind='cubic', \

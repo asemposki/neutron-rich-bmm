@@ -55,13 +55,13 @@ def setup_rc_params(presentation=False):
     # dpi = 150
     mpl.rcParams['figure.titlesize'] = fontsize
     mpl.rcParams['figure.dpi'] = 150  # To show up reasonably in notebooks
-    mpl.rcParams['figure.constrained_layout.use'] = True
+    #mpl.rcParams['figure.constrained_layout.use'] = True
     # 0.02 and 3 points are the defaults:
     # can be changed on a plot-by-plot basis using fig.set_constrained_layout_pads()
-    mpl.rcParams['figure.constrained_layout.wspace'] = 0.0
-    mpl.rcParams['figure.constrained_layout.hspace'] = 0.0
-    mpl.rcParams['figure.constrained_layout.h_pad'] = 3. / ppi  # 3 points
-    mpl.rcParams['figure.constrained_layout.w_pad'] = 3. / ppi
+#     mpl.rcParams['figure.constrained_layout.wspace'] = 0.0
+#     mpl.rcParams['figure.constrained_layout.hspace'] = 0.0
+#     mpl.rcParams['figure.constrained_layout.h_pad'] = 3. / ppi  # 3 points
+#     mpl.rcParams['figure.constrained_layout.w_pad'] = 3. / ppi
 
     mpl.rcParams['legend.title_fontsize'] = fontsize
     mpl.rcParams['legend.fontsize'] = fontsize
@@ -309,7 +309,8 @@ def add_top_order_legend(fig, ax_left, ax_right, orders, colors, light_colors, d
     )
 
 
-def add_uncertainty_legend(fig, ax, legend_entries, error_bar_entries=None, fontsize=18, loc='lower right', alpha=1.0):
+def add_uncertainty_legend(fig, ax, legend_entries, error_bar_entries=None, 
+                           fontsize=18, bbox=None, loc='lower right', alpha=1.0):
     """
     Adds a legend to a Matplotlib axis with combined uncertainty bands and mean lines.
 
@@ -343,5 +344,6 @@ def add_uncertainty_legend(fig, ax, legend_entries, error_bar_entries=None, font
         handler_map={tuple: HandlerPatchLine()},
         fontsize=fontsize,
         loc=loc,
-        frameon=False
+        frameon=False,
+        bbox_to_anchor=bbox,
     )

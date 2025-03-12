@@ -99,7 +99,7 @@ class PQCD:
         conversion_fm3 = ((1000.0)**(3.0))/((197.33)**(3.0)) # [fm^-3]  (do the opposite of this)
         n_q = n_q/conversion_fm3
         
-        # invert to obtain mu_n and mu_FG
+        # invert to obtain mu_n and mu_FG (returns quark chemical potentials)
         _, mu_n, mu_FG = self.inversion(n_mu=n_q)
         
         return mu_FG, mu_n

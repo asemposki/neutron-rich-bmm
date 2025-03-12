@@ -289,9 +289,12 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         #         y_train[:, [output_idx]] @ alpha[:, [output_idx]]
         #     )
         log_likelihood_dims = -0.5 * np.einsum("ik,ik->k", y_train, alpha)
+        self.piece_1 = log_likelihood_dims
         log_likelihood_dims -= np.log(np.diag(L)).sum()
+        self.piece_2 = -np.log(np.diag(L)).sum()
         log_likelihood_dims -= K.shape[0] / 2 * np.log(2 * np.pi)
-        # the log likehood is sum-up across the outputs
+        self.piece_3 = -K.shape[0] / 2 * np.log(2 * np.pi)
+        # the log likehood is sum-up across the outputs     ---- > here we should be able to dissect each piece
         log_likelihood = log_likelihood_dims.sum(axis=-1)
 
         if eval_gradient:
@@ -358,7 +361,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 log_prior_value_ls = self.log_prior_ls(theta)
                 log_prior_value_sig = self.log_prior_sig(theta)
                 self.log_likelihood = log_likelihood
-                self.log_prior = log_prior_value_ls
+                self.log_prior = log_prior_value_ls + log_prior_value_sig
                 log_total = log_likelihood + log_prior_value_ls + log_prior_value_sig
                 log_total_gradient = log_likelihood_gradient + \
                 self.log_prior_ls_gradient(theta) + self.log_prior_sig_gradient(theta)
@@ -516,10 +519,10 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             
         if self.prior_choice == 'truncnorm_15':
             if self.cutoff == 20:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.6, 0.15) # 20n0 0.8
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.9, 0.15) # 20n0 0.8  # 0.6?
 
             elif self.cutoff == 40:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.95, 0.15)  # 40n0  1.05, 0.1
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.9, 0.15)  # 40n0  0.95
         
         # leave un-truncated, truncate later if needed; really gives you 1.0 so far (phat EOS)
         elif self.prior_choice == 'skewnorm':
@@ -544,20 +547,18 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
                 #return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, , 0.1)
 
             elif self.cutoff == 40:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.42, 0.1)  # 40n0  0.95, 0.1
-                #return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, , 0.1)  # 40n0  0.95, 0.1
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.42, 0.1)  # 40n0 
             
         elif self.prior_choice == 'matern32_norm15':
             if self.cutoff == 20:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.86, 0.15) # 20n0 0.8
-
-            elif self.cutoff == 40:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.42, 0.15)  # 40n0  0.95, 0.1
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 3.0, 0.35) # 20n0 1.86
+            elif self.cutoff == 40: 
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.8, 0.35)  # 40n0 2.42
             
         elif self.prior_choice == 'matern52_norm01':
             if self.cutoff == 20:
                 #return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.5, 0.25) # 20n0 0.8
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.65, 0.1)#0.65, 0.1) #1.26, 0.1) # 20n0 0.8
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.0, 0.1)#0.65, 0.1) #1.26, 0.1) # 20n0 0.8
 
             elif self.cutoff == 40:
                 #return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.4, 0.25)  # 40n0  0.95, 0.1
@@ -566,18 +567,18 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         elif self.prior_choice == 'matern52_norm15':
             if self.cutoff == 20:
                 #return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.5, 0.38) # 20n0 0.8
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.26, 0.15)#0.65, 0.15)#1.26, 0.15) # 20n0 0.8
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.5, 0.15) # 1.26
 
             elif self.cutoff == 40:
                 #return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.4, 0.38)  # 40n0  0.95, 0.1
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.65, 0.15) #1.03, 0.15)#1.65, 0.15)  # 40n0  0.95, 0.1
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.5, 0.15) # 1.65
             
         elif self.prior_choice == 'rat_norm15':
             if self.cutoff == 20:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.02, 0.15)
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.8, 0.15)
 
-            elif self.cutoff == 40:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.93, 0.15)
+            elif self.cutoff == 40: 
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.0, 0.15)  # 0.93
             
         elif self.prior_choice == 'rat_norm01':
             if self.cutoff == 20:
@@ -608,9 +609,9 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             # function derivative
             def trunc_deriv_15(ls):
                 if self.cutoff == 20:
-                    trunc_15 = stats.norm.logpdf(ls, 0.6, 0.15)
+                    trunc_15 = stats.norm.logpdf(ls, 0.9, 0.15)
                 elif self.cutoff == 40:
-                    trunc_15 = stats.norm.logpdf(ls, 0.95, 0.15)
+                    trunc_15 = stats.norm.logpdf(ls, 0.9, 0.15)
                 return trunc_15
             deriv_truncnorm_15 = ndt.Derivative(trunc_deriv_15, step=1e-4, method='central')
             return deriv_truncnorm_15(ls) #+ self.luniform_ls(ls, a, b)
@@ -653,9 +654,9 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             # function derivative
             def trunc_deriv_matern(ls):
                 if self.cutoff == 20:
-                    trunc_matern = stats.norm.logpdf(ls, 1.85, 0.15) #(ls, 2.5, 0.63)
+                    trunc_matern = stats.norm.logpdf(ls, 3.0, 0.35) #(ls, 2.5, 0.63)
                 elif self.cutoff == 40:
-                    trunc_matern = stats.norm.logpdf(ls, 2.42, 0.15) #(ls, 4.0, 0.63)
+                    trunc_matern = stats.norm.logpdf(ls, 2.8, 0.35) #(ls, 4.0, 0.63)
                 return trunc_matern
             deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
             return deriv_truncnorm_matern(ls) #+ self.luniform_ls(ls, a, b)
@@ -678,10 +679,10 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             def trunc_deriv_matern(ls):
                 if self.cutoff == 20:
                     #trunc_matern = stats.norm.logpdf(ls, 1.5, 0.38)
-                    trunc_matern = stats.norm.logpdf(ls, 1.26, 0.15) #0.65, 0.15)#1.26, 0.15)
+                    trunc_matern = stats.norm.logpdf(ls, 1.5, 0.15) #0.65, 0.15)#1.26, 0.15)
                 elif self.cutoff == 40:
                     #trunc_matern = stats.norm.logpdf(ls, 2.4, 0.38)
-                    trunc_matern = stats.norm.logpdf(ls, 1.65, 0.15) #1.03, 0.15)#1.65, 0.15)
+                    trunc_matern = stats.norm.logpdf(ls, 1.5, 0.15) #1.03, 0.15)#1.65, 0.15)
                 return trunc_matern
             deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
             return deriv_truncnorm_matern(ls) #+ self.luniform_ls(ls, a, b)
@@ -690,9 +691,9 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             # function derivative
             def trunc_deriv_matern(ls):
                 if self.cutoff == 20:
-                    trunc_matern = stats.norm.logpdf(ls, 1.02, 0.15) 
+                    trunc_matern = stats.norm.logpdf(ls, 0.8, 0.15) 
                 elif self.cutoff == 40:
-                    trunc_matern = stats.norm.logpdf(ls, 0.93, 0.15)
+                    trunc_matern = stats.norm.logpdf(ls, 1.0, 0.15)
                 return trunc_matern
             deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
             return deriv_truncnorm_matern(ls) #+ self.luniform_ls(ls, a, b)

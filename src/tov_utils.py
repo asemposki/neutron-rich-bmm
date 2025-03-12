@@ -20,10 +20,9 @@ def tov_data(edens_full, pres_dict, cs2_data=None, save=False, filepath=None):
     # get organized data
     tov_index = (np.where([pres_dict['dens'][i] <= 0.08 for i in range(len(pres_dict['dens']))])[0][-1] + 1)
     edens_final = edens[tov_index:, :]
-    gp_final = np.asarray([pres_dict['samples'][tov_index:, i] for i in range(samples)]).T #*\
-#                             convert_interp(pres_dict['dens'][tov_index:]) for i in range(samples)]).T
+    gp_final = np.asarray([pres_dict['samples'][tov_index:, i] for i in range(samples)]).T
     density_final = pres_dict['dens'][tov_index:]
-    
+        
     if cs2_data is not None:
         cs2_final = cs2[tov_index:, :]
 
@@ -79,7 +78,7 @@ def causality_stability(cs2, edens, pressure):
     ind_list = []
     for i in range(len(cs2)):
         for j in range(len(cs2.T)):
-            if cs2[i,j] > 1.0 or cs2[i,j] < 0.0:
+            if cs2[i,j] > 1.0 or cs2[i,j] < 0.0:   # could do max > 1.0 or min < 0.0 or something
                 ind_list.append(j)   # cut out the draws (make sure this works right)
                 
     # cut these out of the draws in the TOV results below

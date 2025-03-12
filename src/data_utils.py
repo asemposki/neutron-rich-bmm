@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline, interp1d, make_interp_spline, BSpline, splrep, splev
 
 # helper function to take FRG contour and make into data and make greedy estimates
-def frg_greedy_data(plot=False, larger_errors=False):
+def frg_greedy_data(plot=False, larger_errors=False, scale=0.94):  # scaling allows for other choices to be made
     
     df_frg = pd.read_csv('../data/frg_data_pressure.csv')
     frg_anm = {
         'dens': df_frg['n/n0'],
-        'pressure': 0.94*df_frg['P/P_free']  # scaling the data for ANM
+        'pressure': scale*df_frg['P/P_free']  # scaling the data for ANM (kind of?, change this to a bit higher)
     }
 
     # cut the contour up to find mean value
@@ -46,7 +46,7 @@ def frg_greedy_data(plot=False, larger_errors=False):
     }
 
     if plot is True:
-        plt.plot(df_frg['n/n0'], 0.94*df_frg['P/P_free'], color='m', marker='.', linestyle=' ', \
+        plt.plot(df_frg['n/n0'], scale*df_frg['P/P_free'], color='m', marker='.', linestyle=' ', \
            zorder=10, label='Leonhardt et al. (2020)')
         plt.plot(new_grid, mean_vals, 'g')
         plt.plot(new_grid, uppercontourgrid, 'b')
