@@ -1,7 +1,35 @@
 import numpy as np
 
-# create a routine for the TOV sequence
 def tov_data(edens_full, pres_dict, cs2_data=None, save=False, filepath=None):
+    
+    r"""
+    Function to collect the data needed for the TOV input and to organize
+    it such that it can be read correctly by the TOV solver we are using. 
+    It also attaches the low-density EOS information up to 0.5n0 from Bethe,
+    Pethick, and Sutherland, and Negele and Vautherin's work. 
+    
+    Example:
+        tov_data(edens_full=array, pres_dict=dict, cs2_data=array)
+    
+    Parameters:
+        edens_full (array): The array of energy densities in MeV/fm^3.
+        
+        pres_dict (dict): The dictionary of pressures and their standard deviations
+            in MeV/fm^3, as well as the number density in fm^-3.
+        
+        cs2_data (array): The array of corresponding speed of sound values in 
+            dimensionless units. This is optional, as these values are only 
+            needed if the TOV solver is selected to calculate tidal deformability.
+        
+        save (bool): If the user wishes to save the data file, supply 'True'.
+        
+        filepath (str): If the user wishes to save the data file, supply a proper
+            file path, including any external folders.
+    
+    Returns:
+        tov_dict (dict): The full dictionary of dens, edens, pres, and cs2 
+            (optionally) to be used in the TOV solver. 
+    """
 
     # number of samples
     samples = len(pres_dict['samples'].T)
@@ -69,6 +97,34 @@ def tov_data(edens_full, pres_dict, cs2_data=None, save=False, filepath=None):
     return tov_dict
 
 def causality_stability(cs2, edens, pressure):
+    
+    r"""
+    Function to eliminate any draws from the EOS that are unstable
+    or acausal.
+    
+    Example:
+        causality_stability(cs2=array, edens=array, pressure=array)
+        
+    Parameters:
+        cs2 (array): The array of speed of sound draws. Shape should
+            be [density, draw].
+        
+        edens (array): The array of corresponding energy densities,
+            in the shape [density, draw].
+        
+        pressure (array): The array of corresponding pressures in the
+            shape of [density, draw]. 
+    
+    Returns:
+        cs2_reduced (array): The 2D array of reduced samples for 
+            the speed of sound.
+        
+        edens_reduced (array): The 2D array of reduced samples for 
+            the energy density.
+        
+        pres_reduced (array): The 2D array of reduced samples 
+            for the pressure.
+    """
     
     # check if reshaping is needed (probably unnecessary)
     if cs2.ndim == 1:

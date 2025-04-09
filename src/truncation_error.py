@@ -17,41 +17,33 @@ from sklearn.gaussian_process.kernels import RBF, WhiteKernel
 # class declaration
 class Truncation:
     
-    '''
+    r'''
     The truncation error class that wraps the gsum package.
     For use on the pQCD EOS results. 
     
     Parameters:
-    -----------
-    x : numpy.array
-        Quark chemical potential.
-        
-    x_FG : numpy.2darray
-        FG quark chemical potential.
-        
-    norders : int
-        Number of orders used.
-        
-    orders : list
-        The list of orders ([0 1 2], etc.)
-        
-    yref : function
-        Functional form for yref. 
-        
-    expQ : function
-        Functional form for the expansion parameter.
-        
-    coeffs : numpy.array
-        The coefficient array of arrays. 
-        Must be transposed when sent in to this
-        class.
-    
-    mask : boolean array
-        If using a mask, send the mask in here.
-    
+        x (array): Quark chemical potential.
+
+        x_FG (2D array): FG quark chemical potential.
+
+        norders (int): Number of orders used.
+
+        orders (list): The list of orders ([0 1 2], etc.)
+
+        yref (function): Functional form for yref. 
+
+        expQ (function): Functional form for the expansion
+            parameter.
+
+        coeffs (array): The coefficient array of arrays. 
+            Must be transposed when sent in to this
+            class.
+
+        mask (bool array): If using a mask, send the mask 
+            in here.
+
     Returns:
-    --------
-    None.
+        None.
     '''
 
     def __init__(self, x, x_FG, norders, orders, yref, expQ, coeffs, mask=None):
@@ -118,20 +110,16 @@ class Truncation:
 
     def gp_mask(self, mu):
 
-        '''
+        r'''
         The mask array needed to correctly separate our training
         and testing data.
 
         Parameters:
-        -----------
-        mu : numpy.ndarray
-            The chemical potential linspace needed.
+            mu (array): The chemical potential linspace needed.
 
         Returns:
-        --------
-        self.mask : numpy.ndarray
-            The mask for use when interpolating or using the 
-            truncated GP.
+            self.mask (array): The mask for use when interpolating 
+                or using the truncated GP.
         '''
         
         # mask for values above 40*n0 only (good)
@@ -140,8 +128,8 @@ class Truncation:
         mu_mask = mu[low_bound:]
 #        mu_mask = mu    # no mask applied
         
-        # set the mask s.t. it picks the same training point number each time
-        mask_num = len(mu_mask) // 1.5 #2.5  # original is 2 here for Nf*alpha_s/pi
+        # set the mask s.t. it picks the same training point number each time (this needs to be an input from outside)
+        mask_num = len(mu_mask) // 3.5 #1.5
         mask_true = np.array([(i) % mask_num == 0 for i in range(len(mu_mask))])  # i-3 for <40n0
         
         # concatenate with a mask over the other elements of mu before low_bound
@@ -154,31 +142,24 @@ class Truncation:
     
     def gp_kernel(self, ls=3.0, sd=0.5, center=0, nugget=1e-10):
 
-        '''
+        r'''
         The kernel that we will use both for interpolating the 
         coefficients and for predicting the truncation error bands.
         This one is unfixed, so the value of the ls obtained here will 
         be used to fix the second run when calling params attribute.
 
         Parameters:
-        -----------
-        ls : float
-            The lengthscale guess for the kernel.
+            ls (float): The lengthscale guess for the kernel.
         
-        sd : float
-            The scale for the prior.
+            sd (float): The scale for the prior.
             
-        center : float
-            The center value for the prior.
+            center (float): The center value for the prior.
             
-        nugget : int, float
-            The value of the nugget to send to the 
-            Cholesky decomposition.
+            nugget (int, float): The value of the nugget to send 
+                to the Cholesky decomposition.
 
         Returns:
-        --------
-        kernel : sklearn object
-            The kernel needed for the GPs. 
+            kernel (sklearn object): The kernel needed for the GPs. 
         '''
 
         self.ls = ls    # starting guess; can get really close if we set 0.25 and fix it
@@ -193,29 +174,23 @@ class Truncation:
 
     def gp_interpolation(self, center=0.0, sd=1.0):
 
-        '''
+        r'''
         The function responsible for fitting the coefficients with a GP
         and predicting at new points. This information will be used in 
         constructing our truncated GP in the function 'Uncertainties'. 
 
         Parameters:
-        -----------
-        center : float
-            The center value for the prior.
+            center (float): The center value for the prior.
         
-        sd : float
-            The scale for the prior.
+            sd (float): The scale for the prior.
 
         Returns:
-        --------
-        pred : numpy.ndarray
-            An array of predictions from the GP.
+            pred (array): An array of predictions from the GP.
 
-        std : numpy.ndarray
-            The standard deviation at the points in 'pred'.
+            std (array): The standard deviation at the points in 'pred'.
 
-        underlying_std : numpy.ndarray
-            The underlying standard deviation of the GP.
+            underlying_std (array): The underlying standard deviation of
+                the GP.
         '''
 
         # interpolate the coefficents using GPs and gsum 
@@ -246,45 +221,37 @@ class Truncation:
 
     def uncertainties(self, data=None, expQ=None, yref=None, sd=0.5, nugget=1e-10, excluded=None):
 
-        '''
+        r'''
         Calculation of the truncation error bands for the pQCD EOS, using 
         the Gorda et al. (2021) formulation for the pressure.
         This function uses techniques from the gsum package. 
 
         Parameters:
-        -----------
-        data : numpy.ndarray
-            The data given in an array of arrays for 
-            each order-by-order result.
-        
-        expQ : function
-            The functional form of the expansion parameter
-            for gsum to use.
-        
-        yref : function
-            The functional form of yref for gsum to use.
-         
-        sd : float
-            The scale for the prior.
-        
-        nugget : int, float
-            The nugget for the Cholesky decomposition.
-        
-        excluded : list
-            The orders we wish to exclude from training
-            on in the coefficient arrays. Default is None.
+            data (array): The data given in an array of arrays for 
+                each order-by-order result.
+
+            expQ (function): The functional form of the expansion 
+                parameter for gsum to use.
+
+            yref (function): The functional form of yref for gsum 
+                to use.
+
+            sd (float): The scale for the prior.
+
+            nugget (int, float): The nugget for the Cholesky 
+                decomposition.
+
+            excluded (list): The orders we wish to exclude from training
+                on in the coefficient arrays. Default is None.
         
         Returns:
-        --------
-        data : numpy.ndarray
-            The data array, containing partials at each order.
+            data (array): The data array, containing partials at each 
+                order.
         
-        self.coeffs : numpy.ndarray
-            The values of the coefficents at x.
+            self.coeffs (array): The values of the coefficents at x.
         
-        std_trunc : numpy.ndarray
-            The arrays of truncation errors per each order.
-
+            std_trunc (array): The arrays of truncation errors per each 
+                order.
         '''
         
         # construct mask
@@ -341,25 +308,21 @@ class Truncation:
     
     def diagnostics(self, dx_train=30, dx_test=15):
         
-        '''
+        r'''
         The diagnostic function to check the validity of 
         the truncation error obtained via gsum. Uses
         gsum to perform Mahalanobis distance and pivoted
         Cholesky calculations. Plots the results.
         
         Parameters:
-        -----------
-        dx_train : int
-            The number to use as a step size for the
-            training data.
+            dx_train (int): The number to use as a step size for the
+                training data.
         
-        dx_test : int
-            The number to use as a step size for the
-            testing data.
+            dx_test (int): The number to use as a step size for the
+                testing data.
         
         Returns:
-        --------
-        None
+            None.
         '''
         
         # set the plot labels
