@@ -2,6 +2,8 @@
 
 ## About 
 
+<img align="right" width="250" src="BMM_Logo.png">
+
 A joint effort between members of the Bayesian Analysis of Nuclear Dynamics (BAND) collaboration and Bayesian Uncertainty Quantification (Errors in Your EFT) 
 (BUQEYE) collaboration to perform principled uncertainty quantification of the dense matter equation of state (EOS) using the novel techniques 
 in Bayesian model mixing (BMM). 
