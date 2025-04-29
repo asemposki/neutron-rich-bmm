@@ -1,4 +1,4 @@
-# From chiral EFT to perturbative QCD: a Bayesian model mixing approach to symmetric nuclear matter
+# Microscopic constraints for the equation of state and structure of neutron stars: a Bayesian model mixing framework
 
 ## About 
 
@@ -31,9 +31,6 @@ All of our data is contained here.
 ### src
 The source folder has all of the code written for this paper, including modified versions of open-source BUQEYE code from previous projects from the authors.
 
-### Mathematica codes
-Here you will find the Mathematica notebook that calculates the speeds of sound in Appendix B of the paper, and some of Appendix A as well.
-
 ## Contacts
 
-Authors: Alexandra C. Semposki (Ohio U), Christian Drischler (Ohio U/FRIB), Richard J. Furnstahl (OSU), Jordan A. Melendez (OSU), and Daniel R. Phillips (Ohio U).
+Authors: Alexandra C. Semposki (Ohio U), Christian Drischler (Ohio U/FRIB), Richard J. Furnstahl (OSU), and Daniel R. Phillips (Ohio U).
