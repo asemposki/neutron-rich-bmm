@@ -8,6 +8,8 @@ A joint effort between members of the Bayesian Analysis of Nuclear Dynamics (BAN
 (BUQEYE) collaboration to perform principled uncertainty quantification of the dense matter equation of state (EOS) using the novel techniques 
 in Bayesian model mixing (BMM). 
 
+In this repository, we provide annotated Jupyter notebooks and source code that calculates the neutron star EOS using the microscopic theories of chiral EFT ($\chi$EFT) and perturbative QCD (pQCD), as well as GP kernels designed to perform the model mixing between the two regions and allow for potential experimental and astrophysical constraints via a greedy approach.
+
 ## Installing the repository and its dependencies
 
 This repository is built to work off of the nuclear-matter-convergence repository of the BUQEYE collaboration, [found here](https://github.com/buqeye/nuclear-matter-convergence). As such, it has some dependencies that need to be built in the virtual environment before this repository can be run. Follow the steps below to complete this installation.
