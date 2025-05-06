@@ -1,10 +1,14 @@
-# From chiral EFT to perturbative QCD: a Bayesian model mixing approach to symmetric nuclear matter
+# Microscopic constraints for the equation of state and structure of neutron stars: a Bayesian model mixing framework
 
 ## About 
+
+<img align="right" width="250" src="BMM_Logo.png">
 
 A joint effort between members of the Bayesian Analysis of Nuclear Dynamics (BAND) collaboration and Bayesian Uncertainty Quantification (Errors in Your EFT) 
 (BUQEYE) collaboration to perform principled uncertainty quantification of the dense matter equation of state (EOS) using the novel techniques 
 in Bayesian model mixing (BMM). 
+
+In this repository, we provide annotated Jupyter notebooks and source code that calculates the neutron star EOS using the microscopic theories of chiral EFT and perturbative QCD (pQCD), as well as GP kernels designed to perform the model mixing between the two regions and allow for potential experimental and astrophysical constraints via a greedy approach.
 
 ## Installing the repository and its dependencies
 
@@ -31,9 +35,6 @@ All of our data is contained here.
 ### src
 The source folder has all of the code written for this paper, including modified versions of open-source BUQEYE code from previous projects from the authors.
 
-### Mathematica codes
-Here you will find the Mathematica notebook that calculates the speeds of sound in Appendix B of the paper, and some of Appendix A as well.
-
 ## Contacts
 
-Authors: Alexandra C. Semposki (Ohio U), Christian Drischler (Ohio U/FRIB), Richard J. Furnstahl (OSU), Jordan A. Melendez (OSU), and Daniel R. Phillips (Ohio U).
+Authors: Alexandra C. Semposki (Ohio U), Christian Drischler (Ohio U/FRIB), Richard J. Furnstahl (OSU), and Daniel R. Phillips (Ohio U).
