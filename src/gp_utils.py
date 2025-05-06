@@ -520,13 +520,13 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
 
         elif self.prior_choice == 'matern32':
             if self.cutoff == 20:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.1, 0.15)
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.3, 0.15)
             elif self.cutoff == 40: 
                 return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 3.9, 0.15)
             
         elif self.prior_choice == 'matern52':
             if self.cutoff == 20:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.3, 0.15)
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.65, 0.15)
 
             elif self.cutoff == 40:
                 return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.3, 0.15) 
@@ -564,9 +564,9 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             # function derivative
             def trunc_deriv_matern(ls):
                 if self.cutoff == 20:
-                    trunc_matern = stats.norm.logpdf(ls, 2.1, 0.15)
+                    trunc_matern = stats.norm.logpdf(ls, 2.3, 0.15)
                 elif self.cutoff == 40:
-                    trunc_matern = stats.norm.logpdf(ls, 2.8, 0.15)
+                    trunc_matern = stats.norm.logpdf(ls, 3.9, 0.15)
                 return trunc_matern
             deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
             return deriv_truncnorm_matern(ls)
@@ -575,7 +575,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             # function derivative
             def trunc_deriv_matern(ls):
                 if self.cutoff == 20:
-                    trunc_matern = stats.norm.logpdf(ls, 1.3, 0.15)
+                    trunc_matern = stats.norm.logpdf(ls, 1.65, 0.15)
                 elif self.cutoff == 40:
                     trunc_matern = stats.norm.logpdf(ls, 2.3, 0.15)
                 return trunc_matern
