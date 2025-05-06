@@ -494,6 +494,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             return log_prior, log_gradient
             
 
+    # for stationary kernel use
     def log_prior_ls(self, theta, **kwargs):
         
         if self.prior_choice == 'changepoint':
@@ -505,88 +506,39 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             ls = np.exp(theta[1])
             a = np.exp(self.kernel_.bounds[1,0])
             b = np.exp(self.kernel_.bounds[1,1])
-
-        if self.prior_choice == 'changepoint':
+                  
+        # used for RBF
+        if self.prior_choice == 'truncnorm':
             if self.cutoff == 20:
-                return self.luniform_ls(cp, a, b) + stats.norm.logpdf(cp, 0.82, 0.33)  # 'broad' for now
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.9, 0.15)
+
+            elif self.cutoff == 40:
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.0, 0.15)
         
-        if self.prior_choice == 'truncnorm_01':
-            if self.cutoff == 20:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.6, 0.1) # 20n0 0.8
-
-            elif self.cutoff == 40:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.95, 0.1)  # 40n0  0.95, 0.1
-            
-        if self.prior_choice == 'truncnorm_15':
-            if self.cutoff == 20:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.9, 0.15) # 20n0 0.8  # 0.6?
-
-            elif self.cutoff == 40:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.9, 0.15)  # 40n0  0.95
-        
-        # leave un-truncated, truncate later if needed; really gives you 1.0 so far (phat EOS)
-        elif self.prior_choice == 'skewnorm':
-            if self.cutoff == 20:
-                return stats.skewnorm.logpdf(ls, a=-5.0, loc=0.65, scale=0.5) 
-            elif self.cutoff == 40:
-                return stats.skewnorm.logpdf(ls, a=-5.0, loc=1.0, scale=0.5)
-            
-        # leave un-truncated, truncate later if needed; really gives you 1.0 so far (phat EOS)
-        elif self.prior_choice == 'skewnorm_constrained':
-            if self.cutoff == 20:
-                return stats.skewnorm.logpdf(ls, a=-2.0, loc=0.65, scale=0.5) 
-            elif self.cutoff == 40:
-                return stats.skewnorm.logpdf(ls, a=-2.0, loc=1.0, scale=0.5) 
-              
         elif self.prior_choice == 'uniform':
             return self.luniform_ls(ls, a, b)
-        
-        elif self.prior_choice == 'matern32_norm01':
-            if self.cutoff == 20:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.86, 0.1) # 20n0 0.8
-                #return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, , 0.1)
 
-            elif self.cutoff == 40:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.42, 0.1)  # 40n0 
-            
-        elif self.prior_choice == 'matern32_norm15':
+        elif self.prior_choice == 'matern32':
             if self.cutoff == 20:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 3.0, 0.35) # 20n0 1.86
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.1, 0.15)
             elif self.cutoff == 40: 
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.8, 0.35)  # 40n0 2.42
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 3.9, 0.15)
             
-        elif self.prior_choice == 'matern52_norm01':
+        elif self.prior_choice == 'matern52':
             if self.cutoff == 20:
-                #return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.5, 0.25) # 20n0 0.8
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.0, 0.1)#0.65, 0.1) #1.26, 0.1) # 20n0 0.8
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.3, 0.15)
 
             elif self.cutoff == 40:
-                #return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.4, 0.25)  # 40n0  0.95, 0.1
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.03, 0.1)#1.03, 0.1) #1.65, 0.1)  # 40n0  0.95, 0.1
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.3, 0.15) 
             
-        elif self.prior_choice == 'matern52_norm15':
+        elif self.prior_choice == 'ratquad':
             if self.cutoff == 20:
-                #return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.5, 0.38) # 20n0 0.8
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.5, 0.15) # 1.26
-
-            elif self.cutoff == 40:
-                #return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.4, 0.38)  # 40n0  0.95, 0.1
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.5, 0.15) # 1.65
-            
-        elif self.prior_choice == 'rat_norm15':
-            if self.cutoff == 20:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.8, 0.15)
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.91, 0.15)
 
             elif self.cutoff == 40: 
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.0, 0.15)  # 0.93
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.1, 0.15)
             
-        elif self.prior_choice == 'rat_norm01':
-            if self.cutoff == 20:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.02, 0.1)
-
-            elif self.cutoff == 40:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.93, 0.1)
-    
+            
     def log_prior_ls_gradient(self, theta, **kwargs):
 
         # take in lengthscale only for this prior
@@ -594,122 +546,54 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         a = np.exp(self.kernel_.bounds[1,0])
         b = np.exp(self.kernel_.bounds[1,1])
         
-        if self.prior_choice == 'truncnorm_01':
-            # function derivative
-            def trunc_deriv_01(ls):
-                if self.cutoff == 20:
-                    trunc_01 = stats.norm.logpdf(ls, 0.6, 0.1)
-                elif self.cutoff == 40:
-                    trunc_01 = stats.norm.logpdf(ls, 0.95, 0.1)
-                return trunc_01
-            deriv_truncnorm_01 = ndt.Derivative(trunc_deriv_01, step=1e-4, method='central')
-            return deriv_truncnorm_01(ls) #+ self.luniform_ls(ls, a, b)
-        
-        elif self.prior_choice == 'truncnorm_15':
+        if self.prior_choice == 'truncnorm':
             # function derivative
             def trunc_deriv_15(ls):
                 if self.cutoff == 20:
                     trunc_15 = stats.norm.logpdf(ls, 0.9, 0.15)
                 elif self.cutoff == 40:
-                    trunc_15 = stats.norm.logpdf(ls, 0.9, 0.15)
+                    trunc_15 = stats.norm.logpdf(ls, 1.0, 0.15)
                 return trunc_15
             deriv_truncnorm_15 = ndt.Derivative(trunc_deriv_15, step=1e-4, method='central')
-            return deriv_truncnorm_15(ls) #+ self.luniform_ls(ls, a, b)
-
-        elif self.prior_choice == 'skewnorm':
-            def skew_deriv(ls):
-                if self.cutoff == 20:
-                    skew_norm = stats.skewnorm.logpdf(ls, a=-5.0, loc=0.65, scale=0.5)
-                elif self.cutoff == 40:
-                    skew_norm = stats.skewnorm.logpdf(ls, a=-5.0, loc=1.0, scale=0.5)
-                return skew_norm
-            deriv_skewnorm = ndt.Derivative(skew_deriv, step=1e-4, method='central')
-            return deriv_skewnorm(ls)
-        
-        elif self.prior_choice == 'skewnorm_constrained':
-            def skew_deriv(ls):
-                if self.cutoff == 20:
-                    skew_norm = stats.skewnorm.logpdf(ls, a=-2.0, loc=0.65, scale=0.5)
-                elif self.cutoff == 40:
-                    skew_norm = stats.skewnorm.logpdf(ls, a=-2.0, loc=1.0, scale=0.5)
-                return skew_norm
-            deriv_skewnorm = ndt.Derivative(skew_deriv, step=1e-4, method='central')
-            return deriv_skewnorm(ls)
+            return deriv_truncnorm_15(ls)
                    
         elif self.prior_choice == 'uniform':
             return self.luniform_ls(ls, a, b)
         
-        elif self.prior_choice == 'matern32_norm01':
+        elif self.prior_choice == 'matern32':
             # function derivative
             def trunc_deriv_matern(ls):
                 if self.cutoff == 20:
-                    trunc_matern = stats.norm.logpdf(ls, 1.85, 0.1) #(ls, 2.5, 0.42)
+                    trunc_matern = stats.norm.logpdf(ls, 2.1, 0.15)
                 elif self.cutoff == 40:
-                    trunc_matern = stats.norm.logpdf(ls, 2.42, 0.1) #(ls, 4.0, 0.42)
+                    trunc_matern = stats.norm.logpdf(ls, 2.8, 0.15)
                 return trunc_matern
             deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
-            return deriv_truncnorm_matern(ls) #+ self.luniform_ls(ls, a, b)
+            return deriv_truncnorm_matern(ls)
         
-        elif self.prior_choice == 'matern32_norm15':
+        elif self.prior_choice == 'matern52':
             # function derivative
             def trunc_deriv_matern(ls):
                 if self.cutoff == 20:
-                    trunc_matern = stats.norm.logpdf(ls, 3.0, 0.35) #(ls, 2.5, 0.63)
+                    trunc_matern = stats.norm.logpdf(ls, 1.3, 0.15)
                 elif self.cutoff == 40:
-                    trunc_matern = stats.norm.logpdf(ls, 2.8, 0.35) #(ls, 4.0, 0.63)
+                    trunc_matern = stats.norm.logpdf(ls, 2.3, 0.15)
                 return trunc_matern
             deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
-            return deriv_truncnorm_matern(ls) #+ self.luniform_ls(ls, a, b)
+            return deriv_truncnorm_matern(ls)
         
-        elif self.prior_choice == 'matern52_norm01':
+        elif self.prior_choice == 'ratquad':
             # function derivative
             def trunc_deriv_matern(ls):
                 if self.cutoff == 20:
-                    #trunc_matern = stats.norm.logpdf(ls, 1.5, 0.25)
-                    trunc_matern = stats.norm.logpdf(ls, 1.26, 0.1) #0.65, 0.1)#1.26, 0.1)
+                    trunc_matern = stats.norm.logpdf(ls, 0.91, 0.15) 
                 elif self.cutoff == 40:
-                    trunc_matern = stats.norm.logpdf(ls, 1.65, 0.1) #1.03, 0.1) #1.65, 0.1)
-                    #trunc_matern = stats.norm.logpdf(ls, 2.4, 0.25)
+                    trunc_matern = stats.norm.logpdf(ls, 1.15, 0.15)
                 return trunc_matern
             deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
-            return deriv_truncnorm_matern(ls) #+ self.luniform_ls(ls, a, b)
+            return deriv_truncnorm_matern(ls)
         
-        elif self.prior_choice == 'matern52_norm15':
-            # function derivative
-            def trunc_deriv_matern(ls):
-                if self.cutoff == 20:
-                    #trunc_matern = stats.norm.logpdf(ls, 1.5, 0.38)
-                    trunc_matern = stats.norm.logpdf(ls, 1.5, 0.15) #0.65, 0.15)#1.26, 0.15)
-                elif self.cutoff == 40:
-                    #trunc_matern = stats.norm.logpdf(ls, 2.4, 0.38)
-                    trunc_matern = stats.norm.logpdf(ls, 1.5, 0.15) #1.03, 0.15)#1.65, 0.15)
-                return trunc_matern
-            deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
-            return deriv_truncnorm_matern(ls) #+ self.luniform_ls(ls, a, b)
         
-        elif self.prior_choice == 'rat_norm15':
-            # function derivative
-            def trunc_deriv_matern(ls):
-                if self.cutoff == 20:
-                    trunc_matern = stats.norm.logpdf(ls, 0.8, 0.15) 
-                elif self.cutoff == 40:
-                    trunc_matern = stats.norm.logpdf(ls, 1.0, 0.15)
-                return trunc_matern
-            deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
-            return deriv_truncnorm_matern(ls) #+ self.luniform_ls(ls, a, b)
-        
-        elif self.prior_choice == 'rat_norm01':
-            # function derivative
-            def trunc_deriv_matern(ls):
-                if self.cutoff == 20:
-                    trunc_matern = stats.norm.logpdf(ls, 1.02, 0.1)
-                elif self.cutoff == 40:
-                    trunc_matern = stats.norm.logpdf(ls, 0.93, 0.1)
-                return trunc_matern
-            deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
-            return deriv_truncnorm_matern(ls) #+ self.luniform_ls(ls, a, b)
-   
-    
     # define the prior for the lengthscale (truncated normal)
     def log_prior_sig(self, theta, *args):
         
@@ -725,7 +609,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             else:
                 return -np.inf
             
-        return luniform_sig(sig, a, b) + stats.norm.logpdf(sig, 1.0, 0.25) # 0.25
+        return luniform_sig(sig, a, b) + stats.norm.logpdf(sig, 1.0, 0.25)
     
     
     def log_prior_sig_gradient(self, theta, *args):
@@ -835,3 +719,36 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             raise NotImplementedError
 
         return n_iter_i
+
+#     # leave un-truncated, truncate later if needed; really gives you 1.0 so far (phat EOS)
+#         elif self.prior_choice == 'skewnorm':
+#             if self.cutoff == 20:
+#                 return stats.skewnorm.logpdf(ls, a=-5.0, loc=0.65, scale=0.5) 
+#             elif self.cutoff == 40:
+#                 return stats.skewnorm.logpdf(ls, a=-5.0, loc=1.0, scale=0.5)
+            
+#         # leave un-truncated, truncate later if needed; really gives you 1.0 so far (phat EOS)
+#         elif self.prior_choice == 'skewnorm_constrained':
+#             if self.cutoff == 20:
+#                 return stats.skewnorm.logpdf(ls, a=-2.0, loc=0.65, scale=0.5) 
+#             elif self.cutoff == 40:
+#                 return stats.skewnorm.logpdf(ls, a=-2.0, loc=1.0, scale=0.5) 
+#    elif self.prior_choice == 'skewnorm':
+#             def skew_deriv(ls):
+#                 if self.cutoff == 20:
+#                     skew_norm = stats.skewnorm.logpdf(ls, a=-5.0, loc=0.65, scale=0.5)
+#                 elif self.cutoff == 40:
+#                     skew_norm = stats.skewnorm.logpdf(ls, a=-5.0, loc=1.0, scale=0.5)
+#                 return skew_norm
+#             deriv_skewnorm = ndt.Derivative(skew_deriv, step=1e-4, method='central')
+#             return deriv_skewnorm(ls)
+        
+#         elif self.prior_choice == 'skewnorm_constrained':
+#             def skew_deriv(ls):
+#                 if self.cutoff == 20:
+#                     skew_norm = stats.skewnorm.logpdf(ls, a=-2.0, loc=0.65, scale=0.5)
+#                 elif self.cutoff == 40:
+#                     skew_norm = stats.skewnorm.logpdf(ls, a=-2.0, loc=1.0, scale=0.5)
+#                 return skew_norm
+#             deriv_skewnorm = ndt.Derivative(skew_deriv, step=1e-4, method='central')
+#             return deriv_skewnorm(ls)
