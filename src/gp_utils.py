@@ -1,3 +1,8 @@
+### This *thing* needs the most work. Need integration with scikit-learn
+### to be less of a pain in the ass, to put it mildly. Woo.
+### Timeline: I'll finish this when I'm good and ready. - ACS
+### Also needs automated derivatives to be useful at all. 
+
 from operator import itemgetter
 from scipy.linalg import cho_solve, cholesky
 import numpy as np
@@ -272,9 +277,7 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         y_train = self.y_train_
         if y_train.ndim == 1:
             y_train = y_train[:, np.newaxis]
-            
-        ### Where gsum implements stuff ### ----> do we need to alter the likelihood? I don't think so...
-        
+                    
         # Alg 2.1, page 19, line 3 -> alpha = L^T \ (L \ y)
         alpha = cho_solve((L, GPR_CHOLESKY_LOWER), y_train, check_finite=False)
 
@@ -510,33 +513,33 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
         # used for RBF
         if self.prior_choice == 'truncnorm':
             if self.cutoff == 20:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.9, 0.15)
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.89, 0.15)
 
             elif self.cutoff == 40:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.0, 0.15)
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.15, 0.15)
         
         elif self.prior_choice == 'uniform':
             return self.luniform_ls(ls, a, b)
 
         elif self.prior_choice == 'matern32':
             if self.cutoff == 20:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.3, 0.15)
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.76, 0.15)
             elif self.cutoff == 40: 
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 3.9, 0.15)
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.99, 0.15)
             
         elif self.prior_choice == 'matern52':
             if self.cutoff == 20:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.65, 0.15)
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.8, 0.15)
 
             elif self.cutoff == 40:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 2.3, 0.15) 
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.03, 0.15) 
             
         elif self.prior_choice == 'ratquad':
             if self.cutoff == 20:
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.91, 0.15)
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.55, 0.15)
 
             elif self.cutoff == 40: 
-                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 1.1, 0.15)
+                return self.luniform_ls(ls, a, b) + stats.norm.logpdf(ls, 0.7, 0.15)
             
             
     def log_prior_ls_gradient(self, theta, **kwargs):
@@ -550,9 +553,9 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             # function derivative
             def trunc_deriv_15(ls):
                 if self.cutoff == 20:
-                    trunc_15 = stats.norm.logpdf(ls, 0.9, 0.15)
+                    trunc_15 = stats.norm.logpdf(ls, 0.95, 0.15)
                 elif self.cutoff == 40:
-                    trunc_15 = stats.norm.logpdf(ls, 1.0, 0.15)
+                    trunc_15 = stats.norm.logpdf(ls, 1.3, 0.15)
                 return trunc_15
             deriv_truncnorm_15 = ndt.Derivative(trunc_deriv_15, step=1e-4, method='central')
             return deriv_truncnorm_15(ls)
@@ -564,9 +567,9 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             # function derivative
             def trunc_deriv_matern(ls):
                 if self.cutoff == 20:
-                    trunc_matern = stats.norm.logpdf(ls, 2.3, 0.15)
+                    trunc_matern = stats.norm.logpdf(ls, 0.95, 0.15)
                 elif self.cutoff == 40:
-                    trunc_matern = stats.norm.logpdf(ls, 3.9, 0.15)
+                    trunc_matern = stats.norm.logpdf(ls, 1.2, 0.15)
                 return trunc_matern
             deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
             return deriv_truncnorm_matern(ls)
@@ -575,9 +578,9 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             # function derivative
             def trunc_deriv_matern(ls):
                 if self.cutoff == 20:
-                    trunc_matern = stats.norm.logpdf(ls, 1.65, 0.15)
+                    trunc_matern = stats.norm.logpdf(ls, 0.9, 0.15)
                 elif self.cutoff == 40:
-                    trunc_matern = stats.norm.logpdf(ls, 2.3, 0.15)
+                    trunc_matern = stats.norm.logpdf(ls, 1.2, 0.15)
                 return trunc_matern
             deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
             return deriv_truncnorm_matern(ls)
@@ -586,9 +589,9 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
             # function derivative
             def trunc_deriv_matern(ls):
                 if self.cutoff == 20:
-                    trunc_matern = stats.norm.logpdf(ls, 0.91, 0.15) 
+                    trunc_matern = stats.norm.logpdf(ls, 0.7, 0.15) 
                 elif self.cutoff == 40:
-                    trunc_matern = stats.norm.logpdf(ls, 1.15, 0.15)
+                    trunc_matern = stats.norm.logpdf(ls, 0.95, 0.15)
                 return trunc_matern
             deriv_truncnorm_matern = ndt.Derivative(trunc_deriv_matern, step=1e-4, method='central')
             return deriv_truncnorm_matern(ls)

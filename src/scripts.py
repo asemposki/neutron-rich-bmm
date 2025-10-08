@@ -55,13 +55,13 @@ def setup_rc_params(presentation=False):
     # dpi = 150
     mpl.rcParams['figure.titlesize'] = fontsize
     mpl.rcParams['figure.dpi'] = 150  # To show up reasonably in notebooks
-    #mpl.rcParams['figure.constrained_layout.use'] = True
+    mpl.rcParams['figure.constrained_layout.use'] = True
     # 0.02 and 3 points are the defaults:
     # can be changed on a plot-by-plot basis using fig.set_constrained_layout_pads()
-#     mpl.rcParams['figure.constrained_layout.wspace'] = 0.0
-#     mpl.rcParams['figure.constrained_layout.hspace'] = 0.0
-#     mpl.rcParams['figure.constrained_layout.h_pad'] = 3. / ppi  # 3 points
-#     mpl.rcParams['figure.constrained_layout.w_pad'] = 3. / ppi
+    mpl.rcParams['figure.constrained_layout.wspace'] = 0.0
+    mpl.rcParams['figure.constrained_layout.hspace'] = 0.0
+    mpl.rcParams['figure.constrained_layout.h_pad'] = 3. / ppi  # 3 points
+    mpl.rcParams['figure.constrained_layout.w_pad'] = 3. / ppi
 
     mpl.rcParams['legend.title_fontsize'] = fontsize
     mpl.rcParams['legend.fontsize'] = fontsize
@@ -315,26 +315,33 @@ def add_uncertainty_legend(fig, ax, legend_entries, error_bar_entries=None,
     Adds a legend to a Matplotlib axis with combined uncertainty bands and mean lines.
 
     Parameters:
+        fig : matplotlib.figure.Figure
+            The figure containing the axis.
         ax : matplotlib.axes.Axes
             The axis to which the legend should be added.
         legend_entries : list of tuples
-            Each tuple should be ((uncertainty_color, mean_color), "Label Text").
+            Each tuple should be ((uncertainty_color, mean_color, linestyle), "Label Text").
+        error_bar_entries : list of tuples, optional
+            Each tuple should be (marker_style, color, label).
     """
     
     # Custom legend handler for combined uncertainty band + mean line
     class HandlerPatchLine(HandlerBase):
         def create_artists(self, legend, orig_handle, x0, y0, width, height, fontsize, trans):
-            uncertainty_color, mean_color = orig_handle
+            uncertainty_color, mean_color, linestyle = orig_handle
             rect = Rectangle([x0, y0], width, height, facecolor=uncertainty_color, alpha=alpha, transform=trans)
-            line = Line2D([x0, x0 + width], [y0 + height / 2, y0 + height / 2], color=mean_color, linewidth=2, transform=trans)
+            line = Line2D([x0, x0 + width], [y0 + height / 2, y0 + height / 2], 
+                          color=mean_color, linewidth=2, linestyle=linestyle, transform=trans)
             return [rect, line]
         
-    handles=[entry[0] for entry in legend_entries] 
-    labels=[entry[1] for entry in legend_entries]
+    # Build handles and labels from entries
+    handles = [(entry[0][0], entry[0][1], entry[0][2] if len(entry[0]) > 2 else '-') for entry in legend_entries]
+    labels = [entry[1] for entry in legend_entries]
         
+    # Add error bar entries if provided
     if error_bar_entries:
         for marker_style, color, label in error_bar_entries:
-            handles.append(Line2D([0], [0], marker=marker_style, color=color, \
+            handles.append(Line2D([0], [0], marker=marker_style, color=color,
                                   markersize=8, linestyle='None'))
             labels.append(label)
 

@@ -21,7 +21,7 @@ from pqcd_reworked import PQCD
 n0 = 0.164
 
 # function for obtaining training data for GP implementation
-def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
+def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM', kernel='rbf'):
     
     '''
     Helper function for determining training data 
@@ -127,9 +127,15 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
         chiral_tr_final = {}
         for key,i in chiral_tr.items():
             if chiral_tr[key].ndim == 1:
-                chiral_tr_final[key] = chiral_tr[key][2::20]  # [2::20]
+                if kernel == 'rbf':
+                    chiral_tr_final[key] = chiral_tr[key][2::20]
+                else:
+                    chiral_tr_final[key] = chiral_tr[key][::5]  # [2::20]
             elif chiral_tr[key].ndim == 2:
-                chiral_tr_final[key] = chiral_tr[key][2::20, 2::20]   # [2::20]
+                if kernel == 'rbf':
+                    chiral_tr_final[key] = chiral_tr[key][2::20, 2::20]   # [2::20]
+                else:
+                    chiral_tr_final[key] = chiral_tr[key][::5, ::5]   # [2::20]
     
     elif matter == 'SNM':
         chiral_tr_final = {}
@@ -169,9 +175,15 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM'):
     pqcd_tr_final = {}
     for key,i in pqcd_tr.items():
         if pqcd_tr[key].ndim == 1:
-            pqcd_tr_final[key] = pqcd_tr[key][::40] #[::30] for adding more points for Matern kernel
+            if kernel == 'rbf':
+                pqcd_tr_final[key] = pqcd_tr[key][::40]
+            else:
+                pqcd_tr_final[key] = pqcd_tr[key][::5] #[::40] for adding more points for Matern kernel
         elif pqcd_tr[key].ndim == 2:
-            pqcd_tr_final[key] = pqcd_tr[key][::40, ::40] #[::30, ::30]
+            if kernel == 'rbf':
+                pqcd_tr_final[key] = pqcd_tr[key][::40, ::40]
+            else:
+                pqcd_tr_final[key] = pqcd_tr[key][::5, ::5] #[::40, ::40]
 
     print(chiral_tr_final['dens'].shape, chiral_tr_final['mean'].shape, \
           chiral_tr_final['std'].shape, chiral_tr_final['cov'].shape)

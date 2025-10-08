@@ -229,7 +229,7 @@ class TruncationDens:
         underlying_std = np.sqrt(self.gp_interp.cov_factor_)
         
         # print the kernel parameters for viewing outside the function
-        print(self.gp_interp.kernel_)
+        print('Interpolation parameters: ', self.gp_interp.kernel_)
         print(self.gp_interp.cov_factor_)
 
         return pred, std, underlying_std
@@ -312,6 +312,9 @@ class TruncationDens:
         # check the kernel hyperparameters
         print(self.trunc_gp.coeffs_process.kernel_)
         print(self.trunc_gp.coeffs_process.nugget)
+        
+        # save the GP object from this GP if possible
+        self.trunc_gp_obj = self.trunc_gp
         
         return data, self.coeffs, std_trunc, cov_trunc
     

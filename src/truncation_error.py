@@ -129,7 +129,7 @@ class Truncation:
 #        mu_mask = mu    # no mask applied
         
         # set the mask s.t. it picks the same training point number each time (this needs to be an input from outside)
-        mask_num = len(mu_mask) // 3.5 #1.5
+        mask_num = len(mu_mask) // 1.5   # 3.5 for the n(mu) calculation
         mask_true = np.array([(i) % mask_num == 0 for i in range(len(mu_mask))])  # i-3 for <40n0
         
         # concatenate with a mask over the other elements of mu before low_bound
