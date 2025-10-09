@@ -39,4 +39,5 @@ The source folder has all of the code written for this paper, including modified
 
 ## Contacts
 
-Authors: Alexandra C. Semposki (Ohio U), Christian Drischler (Ohio U/FRIB), Richard J. Furnstahl (OSU), and Daniel R. Phillips (Ohio U).
+Authors: Alexandra C. Semposki (Ohio U), Christian Drischler (Ohio U/FRIB), Richard J. Furnstahl (OSU), Jordan A. Melendez (OSU), and Daniel R. Phillips (Ohio U).
+Contact email: Alexandra C. Semposki: as727414@ohio.edu
