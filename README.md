@@ -17,7 +17,7 @@ This repository is built to work off of the nuclear-matter-convergence repositor
 1. Create a new Conda environment: `conda create -n BUQEYE python==3.9.16`
 2. Activate the environment: `conda activate BUQEYE`
 3. Clone this repository by copying the link in the code tab above: `git clone https://github.com/asemposki/neutron-rich-bmm.git`
-4. Install the dependencies of this example via 'pip install -r requirements.txt'
+4. Install the dependencies of this example via `pip install -r requirements.txt`
 5. Within the above repository folder, git clone gsum: `git clone https://github.com/buqeye/gsum.git` and pip install this in gsum directory using `pip install .`
 6. Also within the repository folder, git clone gptools: `git clone https://github.com/markchil/gptools.git` and pip install this in the gptools directory using `pip install .`
 7. Still within this repository's main folder, git clone the nuclear-matter-convergence repo using `git clone https://github.com/buqeye/nuclear-matter-convergence.git` and `pip install .` within the nuclear-matter-convergence folder
