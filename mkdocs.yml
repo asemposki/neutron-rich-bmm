@@ -88,11 +88,11 @@ plugins:
 nav:
   - Home: index.md
   - Documentation:
+    - api.md
       - Overview:
           - overview.md
           - installation.md
           - examples.md
-      - API Reference: api.md
   - Tutorials:
       - TOV Code: tutorials/TOV_code.ipynb
       - SLM General: tutorials/SLM_general.ipynb
