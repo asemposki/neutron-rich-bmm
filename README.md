@@ -24,7 +24,7 @@ This repository is built to work off of the nuclear-matter-convergence repositor
 8. Also within the repository folder, git clone gptools: `git clone https://github.com/markchil/gptools.git` and pip install this in the gptools directory using `pip install .`
 9. Still within this repository's main folder, git clone the nuclear-matter-convergence repo using `git clone https://github.com/buqeye/nuclear-matter-convergence.git` and `pip install .` within the nuclear-matter-convergence folder
 10. Lastly, git clone the BAND package `Taweret`: `git clone https://github.com/bandframework/Taweret.git` within the repository's main folder, as before, and install using `pip install .` in the `Taweret` directory
-11. Now that this is all done, you can test the structure by going into the `notebooks` folder and saying `jupyter notebook` in terminal, and this should load up the notebooks to be run. You should be all set!
+11. Now that this is all done, you can test the structure by going into the `Notebooks` folder and saying `jupyter notebook` in terminal, and this should load up the notebooks to be run. You should be all set!
 
 ## Navigation
 
