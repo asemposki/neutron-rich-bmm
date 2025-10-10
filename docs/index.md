@@ -1,0 +1,43 @@
+# Microscopic constraints for the equation of state and structure of neutron stars: a Bayesian model mixing framework
+
+## About 
+
+<img align="right" width="250" src="BMM_Logo.png">
+
+A joint effort between members of the Bayesian Analysis of Nuclear Dynamics (BAND) collaboration and Bayesian Uncertainty Quantification (Errors in Your EFT) 
+(BUQEYE) collaboration to perform principled uncertainty quantification of the dense matter equation of state (EOS) using the novel techniques 
+in Bayesian model mixing (BMM). 
+
+In this repository, we provide annotated Jupyter notebooks and source code that calculates the neutron star EOS using the microscopic theories of chiral EFT and perturbative QCD (pQCD), as well as GP kernels designed to perform the model mixing between the two regions and allow for potential experimental and astrophysical constraints via a greedy approach.
+
+## Installing the repository and its dependencies
+
+This repository is built to work off of the nuclear-matter-convergence repository of the BUQEYE collaboration, [found here](https://github.com/buqeye/nuclear-matter-convergence). As such, it has some dependencies that need to be built in the virtual environment before this repository can be run. Follow the steps below to complete this installation.
+
+1. Create a new Conda environment: `conda create -n BUQEYE python==3.9.16`
+2. Activate the environment: `conda activate BUQEYE`
+3. Download `jupyter notebook` through conda-forge via: `conda install -c conda-forge notebook`
+4. Clone this repository by copying the link in the code tab above: `git clone https://github.com/asemposki/neutron-rich-bmm.git`
+5. Navigate into the `neutron-rich-bmm` repository via: `cd neutron-rich-bmm`
+6. Install the dependencies of this example via `pip install -r requirements.txt`
+7. Within the above repository folder, git clone gsum: `git clone https://github.com/buqeye/gsum.git` and pip install this in gsum directory using `pip install .`
+8. Also within the repository folder, git clone gptools: `git clone https://github.com/markchil/gptools.git` and pip install this in the gptools directory using `pip install .`
+9. Still within this repository's main folder, git clone the nuclear-matter-convergence repo using `git clone https://github.com/buqeye/nuclear-matter-convergence.git` and `pip install .` within the nuclear-matter-convergence folder
+10. Lastly, git clone the BAND package `Taweret`: `git clone https://github.com/bandframework/Taweret.git` within the repository's main folder, as before, and install using `pip install .` in the `Taweret` directory
+11. Now that this is all done, you can test the structure by going into the `notebooks` folder and saying `jupyter notebook` in terminal, and this should load up the notebooks to be run. You should be all set!
+
+## Navigation
+
+### Notebooks 
+This folder contains all of the notebooks that generate our results in our paper. 
+
+### data
+All of our data is contained here.
+
+### src
+The source folder has all of the code written for this paper, including modified versions of open-source BUQEYE code from previous projects from the authors.
+
+## Contacts
+
+Authors: Alexandra C. Semposki (Ohio U), Christian Drischler (Ohio U/FRIB), Richard J. Furnstahl (OSU), Jordan A. Melendez (OSU), and Daniel R. Phillips (Ohio U).
+Contact email: Alexandra C. Semposki: as727414@ohio.edu
