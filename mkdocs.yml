@@ -1,0 +1,111 @@
+site_name: Gaussian process Bayesian model mixing for the dense matter equation of state
+site_author: Alexandra C. Semposki, Christian Drischler, Dick Furnstahl, Jordan A. Melendez, and Daniel R. Phillips
+site_description: A Python example using Gaussian processes to perform Bayesian model mixing for the dense matter equation of state.
+site_url: https://asemposki.github.io/neutron-rich-bmm/
+theme:
+  name: material
+
+  # headers for navigating tabs
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.path
+    - toc.integrate
+    - search.highlight
+    - search.share
+    - search.suggest
+    - content.action.edit
+
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      primary: purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - footnotes
+  - md_in_html
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - admonition
+  - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - def_list
+  - pymdownx.arithmatex: # Added for rendering math (LaTeX) in Markdown and notebooks
+      generic: true
+
+extra_javascript:
+  - javascripts/katex.js
+  - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.7/katex.min.js
+  - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.7/contrib/auto-render.min.js
+
+extra_css:
+  - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.7/katex.min.css
+
+# allows for API style docs
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths:
+            - src
+          options:
+            show_source: true
+            show_bases: false
+            show_docstring_parameters: true
+            show_signature_annotations: true
+            merge_init_into_class: true
+            docstring_options:
+              ignore_init_summary: true
+            filters: ["!^_"]
+            extra:
+              render_module_root: true
+              render_submodules: true
+  - mknotebooks:
+      execute_notebooks: true
+      notebook_extensions:
+        - jupyter_execute
+        - jupyter_link
+      jupyter_execute:
+        execute: true
+        timeout: 600
+        kernel_name: python3
+        allow_errors: true
+
+nav:
+  - Home: index.md
+  - Documentation:
+      - Overview:
+          - overview.md
+          - installation.md
+          - usage.md
+          - examples.md
+      - API Reference: api.md
+  - Tutorials:
+      - TOV Code: tutorials/TOV_code.ipynb
+      - SLM General: tutorials/SLM_general.ipynb
+      - Parametric SLM: tutorials/Parametric_SLM.ipynb
+  - Contributing:
+      - contributing.md
+
+  - About:
+      - Authors: authors.md
+      - License: LICENSE
+
+repo_url: https://github.com/asemposki/neutron-rich-bmm
+repo_name: asemposki/neutron-rich-bmm
+edit_uri: edit/main/docs
+copyright: Copyright &copy; 2025 Alexandra C. Semposki, Christian Drischler, Dick Furnstahl, Jordan A. Melendez, and Daniel R. Phillips. All rights reserved.
