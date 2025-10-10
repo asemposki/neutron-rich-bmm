@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neutron-rich-bmm"
+authors = [
+    {name = "Alexandra Semposki"},
+    {name = "Christian Drischler"},
+    {name = "Dick Furnstahl"},
+    {name = "Jordan A. Melendez"},
+    {name = "Daniel R. Phillips"}
+
+]
+description = "neutron-rich-bmm is a Python example using Gaussian processes to model mix the equation of state."
+license = "GPL-3.0-or-later"
+readme = "README.md"
+requires-python = ">=3.9"
+version = "0.0.1"
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "matplotlib",
+    "scikit-learn",
+    "numdifftools",
+    "Cython"
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[tool.setuptools.packages.find] 
+where = ["src"]
+
+[tool.setuptools.package-data]
+"neutron-rich-bmm" = ["data/*", "notebooks/*"]
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+
+[project.urls]
+Homepage = "https://github.com/asemposki/neutron-rich-bmm"
+Documentation = "https://asemposki.github.io/neutron-rich-bmm"
+Issues = "https://github.com/asemposki/neutron-rich-bmm/issues"
