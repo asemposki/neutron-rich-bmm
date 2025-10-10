@@ -16,13 +16,15 @@ This repository is built to work off of the nuclear-matter-convergence repositor
 
 1. Create a new Conda environment: `conda create -n BUQEYE python==3.9.16`
 2. Activate the environment: `conda activate BUQEYE`
-3. Install jupyterlab and jupyter notebook: `conda install jupyterlab, jupyter notebook`
+3. Download `jupyter notebook` through conda-forge via: `conda install -c conda-forge notebook`
 4. Clone this repository by copying the link in the code tab above: `git clone https://github.com/asemposki/neutron-rich-bmm.git`
-5. Within the above repository folder, git clone gsum: `git clone https://github.com/buqeye/gsum.git` and pip install this in gsum directory using `pip install .`
-6. Also within the repository folder, git clone gptools: `git clone https://github.com/markchil/gptools.git` and pip install this in the gptools directory using `pip install .`
-7. Still within this repository's main folder, git clone the nuclear-matter-convergence repo using `git clone https://github.com/buqeye/nuclear-matter-convergence.git` and `pip install .` within the nuclear-matter-convergence folder
-8. Lastly, git clone the BAND package `Taweret` from `https://github.com/bandframework/Taweret.git` within the repository's main folder, as before
-9. Now that this is all done, you can test the structure by going into the `notebooks` folder and saying `jupyter notebook` in terminal, and this should load up the notebooks to be run. You should be all set!
+5. Navigate into the `neutron-rich-bmm` repository via: `cd neutron-rich-bmm`
+6. Install the dependencies of this example via `pip install -r requirements.txt`
+7. Within the above repository folder, git clone gsum: `git clone https://github.com/buqeye/gsum.git` and pip install this in gsum directory using `pip install .`
+8. Also within the repository folder, git clone gptools: `git clone https://github.com/markchil/gptools.git` and pip install this in the gptools directory using `pip install .`
+9. Still within this repository's main folder, git clone the nuclear-matter-convergence repo using `git clone https://github.com/buqeye/nuclear-matter-convergence.git` and `pip install .` within the nuclear-matter-convergence folder
+10. Lastly, git clone the BAND package `Taweret`: `git clone https://github.com/bandframework/Taweret.git` within the repository's main folder, as before, and install using `pip install .` in the `Taweret` directory
+11. Now that this is all done, you can test the structure by going into the `notebooks` folder and saying `jupyter notebook` in terminal, and this should load up the notebooks to be run. You should be all set!
 
 ## Navigation
 
@@ -37,4 +39,5 @@ The source folder has all of the code written for this paper, including modified
 
 ## Contacts
 
-Authors: Alexandra C. Semposki (Ohio U), Christian Drischler (Ohio U/FRIB), Richard J. Furnstahl (OSU), and Daniel R. Phillips (Ohio U).
+Authors: Alexandra C. Semposki (Ohio U), Christian Drischler (Ohio U/FRIB), Richard J. Furnstahl (OSU), Jordan A. Melendez (OSU), and Daniel R. Phillips (Ohio U).
+Contact email: Alexandra C. Semposki: as727414@ohio.edu
