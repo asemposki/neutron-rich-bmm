@@ -3,6 +3,7 @@ from distutils.core import setup, Extension
 setup(
     name='neutron-rich-bmm',
     packages=["neutron_rich_bmm"],   # manually specify the package
+    package_dir={"neutron_rich_bmm": "src/neutron_rich_bmm"},  # **exact path on disk**
     # cmdclass={'build_ext': CustomBuildExtCommand},
     # ext_modules=ext_modules,
     version='0.0.1',
