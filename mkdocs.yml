@@ -91,15 +91,12 @@ nav:
       - Overview:
           - overview.md
           - installation.md
-          - usage.md
           - examples.md
       - API Reference: api.md
   - Tutorials:
       - TOV Code: tutorials/TOV_code.ipynb
       - SLM General: tutorials/SLM_general.ipynb
       - Parametric SLM: tutorials/Parametric_SLM.ipynb
-  - Contributing:
-      - contributing.md
 
   - About:
       - Authors: authors.md
