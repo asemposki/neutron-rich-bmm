@@ -88,7 +88,6 @@ plugins:
 nav:
   - Home: index.md
   - Documentation:
-    - api.md
       - Overview:
           - overview.md
           - installation.md
