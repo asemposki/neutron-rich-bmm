@@ -88,7 +88,7 @@ plugins:
 nav:
   - Home: index.md
   - Documentation:
-    - api.md
+    - API.md
   - About:
       - Authors: authors.md
       - License: LICENSE
