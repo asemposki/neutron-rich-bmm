@@ -499,24 +499,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#neutron_rich_bmm.chiral_model.Chiral_model--parameters" class="md-nav__link">
-    <span class="md-ellipsis">
-      Parameters:
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#neutron_rich_bmm.chiral_model.Chiral_model--returns" class="md-nav__link">
-    <span class="md-ellipsis">
-      Returns:
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#neutron_rich_bmm.chiral_model.Chiral_model-attributes" class="md-nav__link">
     <span class="md-ellipsis">
       Attributes
@@ -572,24 +554,6 @@
   <a href="#neutron_rich_bmm.chiral_model.Chiral_model.evaluate" class="md-nav__link">
     <span class="md-ellipsis">
       evaluate
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#neutron_rich_bmm.chiral_model.Chiral_model.evaluate--parameters" class="md-nav__link">
-    <span class="md-ellipsis">
-      Parameters:
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#neutron_rich_bmm.chiral_model.Chiral_model.evaluate--returns" class="md-nav__link">
-    <span class="md-ellipsis">
-      Returns:
     </span>
   </a>
   
@@ -816,27 +780,27 @@
     <div class="doc doc-contents ">
 
 
-        <h6 id="neutron_rich_bmm.chiral_model.Chiral_model--parameters">Parameters:</h6>
-<p>density : numpy.array
+
+
+<details class="parameters:" open>
+  <summary>Parameters:</summary>
+  <p>density : numpy.array
     The density specified for calculation of the chiral
     EOS. Default is None, which will make the chiral EOS
     default to the original data density range. </p>
-
-
-<details class="lambda-" open>
-  <summary>int</summary>
-  <p>The value of the cutoff chosen. Can be either
-450 MeV or 500 MeV. </p>
+<p>Lambda : int
+    The value of the cutoff chosen. Can be either
+    450 MeV or 500 MeV. </p>
+<p>high_density : bool 
+    Whether we want to use high-density data or not.
+    Default is True. Sets up the data for interpolation
+    in the chiral EOS class. </p>
 </details>
 
-<details class="high_density-" open>
-  <summary>bool</summary>
-  <p>Whether we want to use high-density data or not.
-Default is True. Sets up the data for interpolation
-in the chiral EOS class. </p>
-</details>        <h6 id="neutron_rich_bmm.chiral_model.Chiral_model--returns">Returns:</h6>
-<p>None.</p>
-
+<details class="returns:" open>
+  <summary>Returns:</summary>
+  <p>None.</p>
+</details>
 
 
 
@@ -1004,43 +968,34 @@ in the chiral EOS class. </p>
 
         <p>Returns the mean and standard deviation of the chiral EFT EOS
 in terms of pressure wrt baryon chemical potential.</p>
+<p>Mean: calculated from the chiral EFT EOS formalism of
+      C. Drischler et al. (2021). </p>
+<p>Standard deviation: calculated via the truncation error
+                    models in the gsum package, used in
+                    the chiral EOS paper.</p>
 
 
-<details class="mean" open>
-  <summary>calculated from the chiral EFT EOS formalism of</summary>
-  <p>C. Drischler et al. (2021). </p>
-</details>
-
-<details class="standard-deviation" open>
-  <summary>calculated via the truncation error</summary>
-  <p>models in the gsum package, used in
-the chiral EOS paper.</p>
-</details>        <h6 id="neutron_rich_bmm.chiral_model.Chiral_model.evaluate--parameters">Parameters:</h6>
-<p>input_space : numpy.array
+<details class="parameters:" open>
+  <summary>Parameters:</summary>
+  <p>input_space : numpy.array
     The input space array. Not actually necessary for this 
     function but necessary for Taweret. </p>
-
-
-<details class="n3lo-" open>
-  <summary>bool</summary>
-  <p>If True, returns only the N3LO results for mean and std_dev.
-Otherwise will return all results up to and through N3LO.</p>
+<p>N3LO : bool
+    If True, returns only the N3LO results for mean and std_dev.
+    Otherwise will return all results up to and through N3LO.</p>
+<p>scaled : bool
+    If the data is scaled, then this is True. Else, it is False.
+    Default is True.</p>
+<p>extend : bool
+    Extends the data to higher truncation values. Default is
+    False.</p>
 </details>
 
-<details class="scaled-" open>
-  <summary>bool</summary>
-  <p>If the data is scaled, then this is True. Else, it is False.
-Default is True.</p>
-</details>
-
-<details class="extend-" open>
-  <summary>bool</summary>
-  <p>Extends the data to higher truncation values. Default is
-False.</p>
-</details>        <h6 id="neutron_rich_bmm.chiral_model.Chiral_model.evaluate--returns">Returns:</h6>
-<p>mean, std_dev : numpy.ndarray
+<details class="returns:" open>
+  <summary>Returns:</summary>
+  <p>mean, std_dev : numpy.ndarray
     The mean and standard deviation of the pressure.</p>
-
+</details>
 
             <details class="quote">
               <summary>Source code in <code>src/neutron_rich_bmm/chiral_model.py</code></summary>
