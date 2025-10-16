@@ -7,5 +7,7 @@
       show_object_full_path: false
       show_category_heading: true
       show_root_toc_entry: true
+      show_instance_attributes: false
       members:
         - Chiral_model
+
