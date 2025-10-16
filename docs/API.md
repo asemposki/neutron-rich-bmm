@@ -1,6 +1,6 @@
 # Documentation for the neutron-rich-bmm code
 
-::: neutron_rich_bmm
+::: neutron_rich_bmm.chiral_model
     options:
       show_if_no_docstring: true
       show_root_heading: true
@@ -8,4 +8,4 @@
       show_category_heading: true
       show_root_toc_entry: true
       members:
-        - chiral_model
+        - Chiral_model
