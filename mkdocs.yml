@@ -74,6 +74,7 @@ plugins:
             extra:
               render_module_root: true
               render_submodules: true
+              show_instance_attributes: false
   - mknotebooks:
       execute_notebooks: true
       notebook_extensions:
