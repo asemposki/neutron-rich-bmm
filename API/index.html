@@ -793,17 +793,66 @@
     <div class="doc doc-contents ">
 
 
-        <p>Parameters:
-    density (numpy.array): The density specified for calculation of the chiral
-        EOS. Default is None, which will make the chiral EOS
-        default to the original data density range. </p>
-<p>Lambda (int): The value of the cutoff chosen. Can be either
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>density</code>
+            </td>
+            <td>
+                  <code><span title="numpy.array">array</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The density specified for calculation of the chiral
+EOS. Default is None, which will make the chiral EOS
+default to the original data density range. </p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+        <p>Lambda (int): The value of the cutoff chosen. Can be either
         450 MeV or 500 MeV. </p>
 <p>high_density (bool): Whether we want to use high-density data or not.
         Default is True. Sets up the data for interpolation
         in the chiral EOS class. </p>
-<p>Returns:
-    None.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>None.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 
@@ -905,22 +954,122 @@ in terms of pressure wrt baryon chemical potential. The mean is calculated
 from the chiral EFT EOS formalism of C. Drischler et al. (2021). The 
 standard deviation is calculated via the truncation error models in the gsum 
 package, used in the chiral EOS paper.</p>
-<p>Parameters:
-    input_space (numpy.array): The input space array. Not actually necessary 
-        for this function but necessary for Taweret. </p>
-<div class="highlight"><pre><span></span><code>N3LO (bool): If True, returns only the N3LO results for mean and std_dev.
-    Otherwise will return all results up to and through N3LO.
 
-scaled (bool): If the data is scaled, then this is True. Else, it is False.
-    Default is True.
 
-extend (bool): Extends the data to higher truncation values. Default is
-    False.
-</code></pre></div>
-<p>Returns:
-    mean (numpy.1darray): The mean of the pressure. </p>
-<div class="highlight"><pre><span></span><code>std_dev (numpy.1darray): The standard deviation of the pressure.
-</code></pre></div>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_space</code>
+            </td>
+            <td>
+                  <code><span title="numpy.array">array</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The input space array. Not actually necessary 
+for this function but necessary for Taweret. </p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>N3LO</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, returns only the N3LO results for mean and std_dev.
+Otherwise will return all results up to and through N3LO.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>scaled</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the data is scaled, then this is True. Else, it is False.
+Default is True.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>extend</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Extends the data to higher truncation values. Default is
+False.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>mean</code></td>            <td>
+                  <code>numpy.1darray</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The mean of the pressure. </p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+<td><code>std_dev</code></td>            <td>
+                  <code>numpy.1darray</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The standard deviation of the pressure.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="quote">
@@ -1231,17 +1380,94 @@ this model.</p>
         <p>function imports the necessary data to begin the calculation, and
 sets up the density and data for interpolation. Choice of Lambda 
 (450, 500) is also made here. </p>
-<p>Parameters:
-    density_input (numpy.linspace): The density regime for the chiral 
-        EOS. Default is set below in the code. </p>
-<div class="highlight"><pre><span></span><code>Lambda (int): The desired cutoff to use. Default is 500; either
-    450 or 500 MeV may currently be chosen.
 
-high_density (bool): Decision to use high density data or not.
-    Default is True.
-</code></pre></div>
-<p>Returns:
-    None.</p>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>density_input</code>
+            </td>
+            <td>
+                  <code><span title="numpy.linspace">linspace</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The density regime for the chiral 
+EOS. Default is set below in the code. </p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>Lambda</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The desired cutoff to use. Default is 500; either
+450 or 500 MeV may currently be chosen. </p>
+              </div>
+            </td>
+            <td>
+                  <code>500</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>high_density</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Decision to use high density data or not.
+Default is True. </p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>None.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 
@@ -1542,16 +1768,79 @@ high_density (bool): Decision to use high density data or not.
 type is desired: either type=1 ((P+eps)/n) or type=2 (deps/dn).
 Both should be equivalent if thermodynamic consistency is 
 preserved. </p>
-<p>Parameters:
-    method (int): The type of calculation to obtain the chemical 
-        potential. Possibilities include: 1 = (P+eps)/n and 
-        2 = d(eps)/dn. Default is 1. </p>
-<div class="highlight"><pre><span></span><code>add_rest_mass (bool): Adds the rest mass to the energy per 
-    particle if desired. Default is False.
-</code></pre></div>
-<p>Returns:
-    self.mu_s, self.mu_s_stds (numpy.ndarray): The chemical 
-        potential and std dev for the chiral EOS, wrt n.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>method</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The type of calculation to obtain the chemical 
+potential. Possibilities include: 1 = (P+eps)/n and 
+2 = d(eps)/dn. Default is 1. </p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>add_rest_mass</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Adds the rest mass to the energy per 
+particle if desired. Default is False. </p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>self.mu_s, self.mu_s_stds (numpy.ndarray): The chemical 
+potential and std dev for the chiral EOS, wrt n.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="quote">
@@ -1729,23 +2018,100 @@ preserved. </p>
         <p>The interpolation of the data using the observable
 containers from nuclear-matter-convergence for neutron matter,
 symmetric nuclear matter, and the symmetry energy calculation.</p>
-<p>Parameters:
-    density_int (numpy.1darray): The interpolated number density values 
-        from the mu(n) inversion.
-        Default is None; this will leave the container to use the 
-        original interpolated density_all. </p>
-<div class="highlight"><pre><span></span><code>kf_s_int (numpy.1darray): The interpolated Fermi momenta for SNM. This will be replaced
-    when calculating the inverted density and chemical potential.
-    Default is None; this will leave the container to use the
-    original interpolated kf_s.
 
-extend (bool): Whether or not to extend the data using the mean 
-    function estimation and extending the truncation error. Default is False.
-</code></pre></div>
-<p>Returns:
-    self.obs_neutron, self.obs_nuclear, self.obs_sym_energy (objects):
-        The objects that contain the important interpolation information
-        for the chiral EFT EOS for PNM, SNM, and the symmetry energy.</p>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>density_int</code>
+            </td>
+            <td>
+                  <code>numpy.1darray</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The interpolated number density values 
+from the mu(n) inversion.
+Default is None; this will leave the container to use the 
+original interpolated density_all. </p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>kf_s_int</code>
+            </td>
+            <td>
+                  <code>numpy.1darray</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The interpolated Fermi momenta for SNM. This will be replaced
+when calculating the inverted density and chemical potential.
+Default is None; this will leave the container to use the
+original interpolated kf_s. </p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>extend</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether or not to extend the data using the mean 
+function estimation and extending the truncation error. Default is False.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>self.obs_neutron, self.obs_nuclear, self.obs_sym_energy (objects):
+The objects that contain the important interpolation information
+for the chiral EFT EOS for PNM, SNM, and the symmetry energy.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="quote">
@@ -1970,16 +2336,79 @@ extend (bool): Whether or not to extend the data using the mean
 
         <p>Computes the energy density and standard deviation of the energy
 density of the chiral EOS. Adds rest mass if desired. </p>
-<p>Parameters:
-    add_rest_mass (bool): The option to include the rest mass in 
-        the E/A (and in the energy density). </p>
-<div class="highlight"><pre><span></span><code>orders (str): Option to either calculate all orders (&#39;all&#39;) or 
-    only N3LO (&#39;N3LO&#39;). Default is &#39;all&#39;.
-</code></pre></div>
-<p>Returns:
-    self.energy_density, self.energy_density_s_stds (numpy.ndarray):
-        The energy density and standard deviation of the energy 
-        density.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>add_rest_mass</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The option to include the rest mass in 
+the E/A (and in the energy density). </p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>orders</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Option to either calculate all orders ('all') or 
+only N3LO ('N3LO'). Default is 'all'.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;all&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>self.energy_density, self.energy_density_s_stds (numpy.ndarray):
+The energy density and standard deviation of the energy 
+density.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="quote">
@@ -2146,20 +2575,106 @@ density of the chiral EOS. Adds rest mass if desired. </p>
 
         <p>A function that ouputs the energy per particle with truncation 
 errors from gsum. </p>
-<p>Parameters:
-    add_rest_mass (bool): If desired, will add the rest mass to the energy per
-        particle. </p>
-<div class="highlight"><pre><span></span><code>orders (str): Command to determine whether we use all orders for the EFT or
-    just one of them. Default is &#39;all&#39;, but &#39;N3LO&#39; will convert
-    to only one EFT at N3LO.
-</code></pre></div>
-<p>Returns:
-    self.energies_s, self.energy_s_stds (numpy.ndarray): The energy per 
-        particle (E/A) and standard deviation of E/A.</p>
-<div class="highlight"><pre><span></span><code>self.energies_s_mn, self.energy_s_stds (numpy.ndarray): E/A (inclusive of 
-the rest mass) and the standard deviation of E/A. This is returned if
-add_rest_mass is True.
-</code></pre></div>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>add_rest_mass</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If desired, will add the rest mass to the energy per
+particle. </p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>orders</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Command to determine whether we use all orders for the EFT or
+just one of them. Default is 'all', but 'N3LO' will convert
+to only one EFT at N3LO. </p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;all&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>self.energies_s, self.energy_s_stds (numpy.ndarray): The energy per 
+particle (E/A) and standard deviation of E/A.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>self.energies_s_mn, self.energy_s_stds (numpy.ndarray): E/A (inclusive of </p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>the rest mass) and the standard deviation of E/A. This is returned if</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>add_rest_mass is True.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="quote">
@@ -2325,18 +2840,103 @@ add_rest_mass is True.
     <div class="doc doc-contents ">
 
         <p>fsolve function to invert mu(n) to n(mu).</p>
-<p>Parameters:
-    mu (float): The current value in the chemical potential 
-        to be inverted.</p>
-<div class="highlight"><pre><span></span><code>mu_func (function): The function from interp1d that is 
-    to be solved for n.
 
-guess (float): The guess for fsolve to find a root. 
-    Default is 0.33.
-</code></pre></div>
-<p>Returns:
-    The value of n with respect to the given values of the 
-    chemical potential.</p>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>mu</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The current value in the chemical potential 
+to be inverted.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>mu_func</code>
+            </td>
+            <td>
+                  <code><span title="function">function</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The function from interp1d that is 
+to be solved for n.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>guess</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The guess for fsolve to find a root. 
+Default is 0.33. </p>
+              </div>
+            </td>
+            <td>
+                  <code>0.33</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The value of n with respect to the given values of the </p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>chemical potential.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="quote">
@@ -2403,19 +3003,82 @@ guess (float): The guess for fsolve to find a root.
 able to use the fsolve function to do this. For Lambda = 450 MeV,
 must manually invert. ***Note: because of this, the range of mu is 
 not the same for both cases of Lambda. </p>
-<p>Parameters:
-    guess (float): The guess for the fsolve function to invert for 
-        Lambda = 500 MeV. If using Lambda = 450 MeV, this argument 
-        is ignored. Default is 0.33. </p>
-<p>Returns:
-    self.density_mu_N3LO (numpy.ndarray): The array in density that 
-        we obtain from inversion. </p>
-<div class="highlight"><pre><span></span><code>self.mu_array_N3LO (numpy.ndarray): The inverted chemical potential 
-    array.
 
-self.kf_N3LO (numpy.ndarray): The new array in kf for the observable 
-    container once mu has been inverted.
-</code></pre></div>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>guess</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The guess for the fsolve function to invert for 
+Lambda = 500 MeV. If using Lambda = 450 MeV, this argument 
+is ignored. Default is 0.33. </p>
+              </div>
+            </td>
+            <td>
+                  <code>0.33</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>self.density_mu_N3LO (numpy.ndarray): The array in density that 
+we obtain from inversion. </p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>self.mu_array_N3LO (numpy.ndarray): The inverted chemical potential 
+array. </p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>self.kf_N3LO (numpy.ndarray): The new array in kf for the observable 
+container once mu has been inverted.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="quote">
@@ -2648,23 +3311,123 @@ self.kf_N3LO (numpy.ndarray): The new array in kf for the observable
 
         <p>Inversion function that uses fsolve. At present, only used
 for Lambda = 500 MeV. </p>
-<p>Parameters:
-    n (numpy.ndarray): The array of densities that we currently
-        possess.</p>
-<div class="highlight"><pre><span></span><code>mu (numpy.ndarray): The array of chemical potential values 
-    for the range of densities in n.
 
-guess (float): The guess for fsolve. Default is 0.33.
 
-nnew (numpy.ndarray): The values for the new array in density. 
-    Default is None.
-</code></pre></div>
-<p>Returns:
-    mu_new (numpy.ndarray): Array of mu results at new points 
-        in density. </p>
-<div class="highlight"><pre><span></span><code>f_n_result (numpy.ndarray): The results of the root finding wrt 
-    the new chemical potential array.
-</code></pre></div>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>n</code>
+            </td>
+            <td>
+                  <code><span title="numpy.ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The array of densities that we currently
+possess.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>mu</code>
+            </td>
+            <td>
+                  <code><span title="numpy.ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The array of chemical potential values 
+for the range of densities in n.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>guess</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The guess for fsolve. Default is 0.33.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.33</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>nnew</code>
+            </td>
+            <td>
+                  <code><span title="numpy.ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The values for the new array in density. 
+Default is None.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>mu_new</code></td>            <td>
+                  <code><span title="numpy.ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Array of mu results at new points 
+in density. </p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+<td><code>f_n_result</code></td>            <td>
+                  <code><span title="numpy.ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The results of the root finding wrt 
+the new chemical potential array.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="quote">
@@ -2770,13 +3533,62 @@ nnew (numpy.ndarray): The values for the new array in density.
         <p>The pressure of the chiral EOS. 
 Note: Rest mass will not affect this calculation, so no option for 
 adding the rest mass is included here. </p>
-<p>Parameters:
-    orders (str): Command to determine how many orders in the EFT 
-        expansion to calculate. Default is 'all', but can be set to 
-        'N3LO' to only return that one.</p>
-<p>Returns:
-    self.pressure_s, self.pressure_s_stds (numpy.ndarray): The 
-        pressure and standard deviation of the pressure.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>orders</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Command to determine how many orders in the EFT 
+expansion to calculate. Default is 'all', but can be set to 
+'N3LO' to only return that one.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;all&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>self.pressure_s, self.pressure_s_stds (numpy.ndarray): The 
+pressure and standard deviation of the pressure.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="quote">
