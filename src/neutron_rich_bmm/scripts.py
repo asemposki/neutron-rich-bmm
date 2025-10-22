@@ -12,10 +12,8 @@ from matplotlib.lines import Line2D
 
 def setup_rc_params(presentation=False):
     """Set matplotlib's rc parameters for the plots
-        Parameters
-        ----------
-        presentation : boolean
-            increases font size (more readable) for talks if enabled
+        Parameters:
+            presentation (boolean): increases font size (more readable) for talks if enabled
     """
     if presentation:
         fontsize = 11
@@ -82,12 +80,11 @@ def setup_rc_params(presentation=False):
 def fermi_momentum(density, degeneracy):
     """Computes the Fermi momentum of infinite matter in inverse fermi
 
-    Parameters
-    ----------
-    density : array
-        The density in inverse fermi^3
-    degeneracy : int
-        The degeneracy factor [g]. Equals 2 for neutron matter and 4 for symmetric matter.
+    Parameters:
+        density (array): The density in inverse fermi^3
+    
+        degeneracy (int): The degeneracy factor [g]. 
+            Equals 2 for neutron matter and 4 for symmetric matter.
     """
     return (6 * np.pi**2 * density / degeneracy)**(1./3)
 
@@ -97,10 +94,10 @@ def lighten_color(color, amount=0.5):
     Lightens the given color by multiplying (1-luminosity) by the given amount.
     Input can be matplotlib color string, hex string, or RGB tuple.
 
-    Examples:
-    >> lighten_color('g', 0.3)
-    >> lighten_color('#F034A3', 0.6)
-    >> lighten_color((.3,.55,.1), 0.5)
+    :Example:
+        >> lighten_color('g', 0.3)
+        >> lighten_color('#F034A3', 0.6)
+        >> lighten_color((.3,.55,.1), 0.5)
     """
     import matplotlib.colors as mc
     import colorsys
@@ -315,14 +312,15 @@ def add_uncertainty_legend(fig, ax, legend_entries, error_bar_entries=None,
     Adds a legend to a Matplotlib axis with combined uncertainty bands and mean lines.
 
     Parameters:
-        fig : matplotlib.figure.Figure
-            The figure containing the axis.
-        ax : matplotlib.axes.Axes
-            The axis to which the legend should be added.
-        legend_entries : list of tuples
-            Each tuple should be ((uncertainty_color, mean_color, linestyle), "Label Text").
-        error_bar_entries : list of tuples, optional
-            Each tuple should be (marker_style, color, label).
+        fig (matplotlib.figure.Figure): The figure containing the axis.
+        
+        ax (matplotlib.axes.Axes): The axis to which the legend should be added.
+        
+        legend_entries (list of tuples): Each tuple should be ((uncertainty_color, 
+            mean_color, linestyle), "Label Text").
+        
+        error_bar_entries (list of tuples, optional): Each tuple should be 
+            (marker_style, color, label).
     """
     
     # Custom legend handler for combined uncertainty band + mean line

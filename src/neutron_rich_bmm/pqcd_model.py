@@ -21,21 +21,16 @@ class PQCD_model(BaseModel):
         function since it is already calibrated. 
 
         Parameters:
-        -----------
-        mu : numpy.linspace
-            The quark chemical potential needed to generate
-            the mean and standard deviation of the pressure
-            in the pQCD EOS model.
+            mu (numpy.linspace): The quark chemical potential needed 
+                to generate the mean and standard deviation of the pressure
+                in the pQCD EOS model.
             
-        X : int
-            The renormalization scale parameter.
+        X (int): The renormalization scale parameter.
         
-        Nf : int
-            The quark flavour. 
+        Nf (int): The quark flavour. 
 
         Returns:
-        --------
-        None. 
+            None. 
         '''
 
         # set the chemical potential (change later if needed)
@@ -54,35 +49,25 @@ class PQCD_model(BaseModel):
         '''
         Returns the mean and standard deviation of the pQCD EOS
         in terms of pressure wrt quark chemical potential.
-        In this EOS, quarks are massless. 
-
-        Mean: calculated using the Kurkela formalism. 
-
-        Standard deviation: calculated via the truncation error
-                            models in the gsum package.
+        In this EOS, quarks are massless. The mean is calculated using the 
+        Kurkela formalism. The standard deviation is calculated via the truncation 
+        error models in the gsum package.
 
         Parameters:
-        -----------
-        input_space : numpy.array
-            The input space for this model. Not needed for this function,
-            but necessary for Taweret.
+            input_space (numpy.array): The input space for this model. Not needed 
+                for this function, but necessary for Taweret.
             
-        wrt_dens : bool
-            Option to solve Kurkela pQCD EOS wrt the number density
-            instead of the chemical potential. Involves solving wrt
-            chemical potential and inverting the result for density.
+            wrt_dens (bool): Option to solve Kurkela pQCD EOS wrt the number density
+                nstead of the chemical potential. Involves solving wrt
+                chemical potential and inverting the result for density.
 
-        N2LO : bool
-            If True, returns the mean and std_dev of the N2LO results only.
-            If otherwise, will return up to and through N2LO.
+            N2LO (bool): If True, returns the mean and std_dev of the N2LO results only.
+                If otherwise, will return up to and through N2LO.
             
-        scaled : bool
-            If the data is scaled or not. Default is True.
+            scaled (bool): If the data is scaled or not. Default is True.
 
         Returns:
-        --------
-        mean, std_dev : numpy.ndarray
-            The mean and standard deviation of the pressure. 
+            mean, std_dev (numpy.ndarray): The mean and standard deviation of the pressure. 
         '''
         
         # correct for input_space (for now)

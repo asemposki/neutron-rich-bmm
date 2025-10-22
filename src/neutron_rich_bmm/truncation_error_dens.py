@@ -22,37 +22,28 @@ class TruncationDens:
     The truncation error class that wraps the gsum package.
     For use on the pQCD EOS results, in density (KLW).
     
-    Parameters:
-    -----------
-    nb : numpy.array
-        Baryon number density.
+    Parameters: 
+        nb (numpy.array): Baryon number density.
        
-    norders : int
-        Number of orders used.
+        norders (int): Number of orders used.
         
-    orders : list
-        The list of orders ([0 1 2], etc.)
+        orders (list): The list of orders ([0 1 2], etc.)
         
-    yref : function
-        Functional form for yref, dependent on the
-        number density. 
+        yref (function): Functional form for yref, dependent on the
+            number density. 
         
-    expQ : function
-        Functional form for the expansion parameter,
-        dependent on the number density.
+        expQ (function): Functional form for the expansion parameter,
+            dependent on the number density.
         
-    coeffs : numpy.array
-        The coefficient array of arrays. 
-        Must be transposed when sent in to this
-        class. Dependent on number density.
+        coeffs (numpy.array): The coefficient array of arrays. 
+            Must be transposed when sent in to this
+            class. Dependent on number density.
     
-    mask : boolean array
-        If using a mask over some orders, send the mask 
-        in here.
+        mask (boolean array): If using a mask over some orders, send the mask 
+            in here.
     
     Returns:
-    --------
-    None.
+        None.
     '''
 
     def __init__(self, nb, norders, orders, yref, expQ, coeffs, mask=None):
@@ -117,15 +108,11 @@ class TruncationDens:
         and testing data.
 
         Parameters:
-        -----------
-        nb : numpy.ndarray
-            The number density linspace needed.
+            nb (numpy.ndarray): The number density linspace needed.
 
         Returns:
-        --------
-        self.mask : numpy.ndarray
-            The mask for use when interpolating or using the 
-            truncated GP.
+            self.mask (numpy.ndarray): The mask for use when 
+                interpolating or using the truncated GP.
         '''
         
         # mask for values above 40*n0 only (good)
@@ -153,24 +140,17 @@ class TruncationDens:
         be used to fix the second run when calling params attribute.
 
         Parameters:
-        -----------
-        ls : float
-            The lengthscale guess for the kernel.
+            ls (float): The lengthscale guess for the kernel.
         
-        sd : float
-            The scale for the prior.
+            sd (float): The scale for the prior.
             
-        center : float
-            The center value for the prior.
+            center (float): The center value for the prior.
             
-        nugget : int, float
-            The value of the nugget to send to the 
-            Cholesky decomposition.
+            nugget (int, float): The value of the nugget to send to the 
+                Cholesky decomposition.
 
         Returns:
-        --------
-        kernel : sklearn object
-            The kernel needed for the GPs. 
+            kernel (sklearn object): The kernel needed for the GPs. 
         '''
 
         self.ls = ls    # starting guess; can get really close if we set 0.25 and fix it
@@ -190,23 +170,18 @@ class TruncationDens:
         constructing our truncated GP in the function 'Uncertainties'. 
 
         Parameters:
-        -----------
-        center : float
-            The center value for the prior.
+            center (float): The center value for the prior.
         
-        sd : float
-            The scale for the prior.
+            sd (float): The scale for the prior.
 
         Returns:
-        --------
-        pred : numpy.ndarray
-            An array of predictions from the GP.
+            pred (numpy.ndarray): An array of predictions from the GP.
 
-        std : numpy.ndarray
-            The standard deviation at the points in 'pred'.
+            std (numpy.ndarray): The standard deviation at the points in 
+                'pred'.
 
-        underlying_std : numpy.ndarray
-            The underlying standard deviation of the GP.
+            underlying_std (numpy.ndarray): The underlying standard deviation 
+                of the GP.
         '''
 
         # interpolate the coefficents using GPs and gsum 
@@ -243,39 +218,27 @@ class TruncationDens:
         This function uses techniques from the gsum package. 
 
         Parameters:
-        -----------
-        data : numpy.ndarray
-            The data given in an array of arrays for 
-            each order-by-order result.
+            data (numpy.ndarray): The data given in an array of arrays for 
+                each order-by-order result.
         
-        expQ : function
-            The functional form of the expansion parameter
-            for gsum to use.
+            expQ (function): The functional form of the expansion parameter
+                for gsum to use.
         
-        yref : function
-            The functional form of yref for gsum to use.
+            yref (function): The functional form of yref for gsum to use.
          
-        sd : float
-            The scale for the prior.
+            sd (float): The scale for the prior.
         
-        nugget : int, float
-            The nugget for the Cholesky decomposition.
+            nugget (int, float): The nugget for the Cholesky decomposition.
         
-        excluded : list
-            The orders we wish to exclude from training
-            on in the coefficient arrays. Default is None.
+            excluded (list): The orders we wish to exclude from training
+                on in the coefficient arrays. Default is None.
         
         Returns:
-        --------
-        data : numpy.ndarray
-            The data array, containing partials at each order.
+            data (numpy.ndarray): The data array, containing partials at each order.
         
-        self.coeffs : numpy.ndarray
-            The values of the coefficents at nb.
+            self.coeffs (numpy.ndarray): The values of the coefficents at nb.
         
-        std_trunc : numpy.ndarray
-            The arrays of truncation errors per each order.
-
+            std_trunc (numpy.ndarray): The arrays of truncation errors per each order.
         '''
         
         # construct mask
@@ -342,18 +305,14 @@ class TruncationDens:
         Cholesky calculations. Plots the results.
         
         Parameters:
-        -----------
-        dx_train : int
-            The number to use as a step size for the
-            training data.
+            dx_train (int): The number to use as a step size for the
+                training data.
         
-        dx_test : int
-            The number to use as a step size for the
-            testing data.
+            dx_test (int): The number to use as a step size for the
+                testing data.
         
         Returns:
-        --------
-        None
+            None
         '''
         
         # set the plot labels

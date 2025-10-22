@@ -29,24 +29,18 @@ class Gorda(BaseModel):
         function since it is already calibrated. 
 
         Parameters:
-        -----------
-        mu : numpy.linspace
-            The quark chemical potential needed to generate
-            the mean and standard deviation of the pressure
-            in the pQCD EOS model. 
+            mu (numpy.linspace): The quark chemical potential needed 
+                to generate the mean and standard deviation of the pressure
+                in the pQCD EOS model. 
             
-        X : int
-            The value of the renormalization scale parameter.
+            X (int): The value of the renormalization scale parameter.
         
-        Nf : int
-            The number of flavours of quarks considered.
+            Nf (int): The number of flavours of quarks considered.
             
-        mu_FG : numpy.ndarray
-            The FG chemical potential array.
+            mu_FG (numpy.ndarray): The FG chemical potential array.
 
         Returns:
-        --------
-        None. 
+            None. 
         '''
 
         # set the chemical potential (change later if needed)
@@ -78,23 +72,18 @@ class Gorda(BaseModel):
         calibrated mean and variance of the pQCD model.
         
         Parameters:
-        -----------
-        input_space: numpy.ndarray
-            The number density array.
+            input_space (numpy.ndarray): The number density array.
         
-        N2LO : bool
-            If we only want the data from the pQCD pressure 
-            at N2LO. Default is True.
+            N2LO (bool): If we only want the data from the pQCD pressure 
+                at N2LO. Default is True.
             
-        scaled : bool
-            If the data is scaled, this is True. Else, it is False.
-            Default is True.
+            scaled (bool): If the data is scaled, this is True. 
+                Else, it is False. Default is True.
         
         Returns:
-        --------
-        mean, std_dev: numpy.ndarray
-            The mean and standard deviations at the selected
-            points in the input space of the pQCD pressure.
+            mean, std_dev (numpy.ndarray): The mean and standard 
+                deviations at the selected points in the input space 
+                of the pQCD pressure.
         '''
         
         # KLW formalism for the pQCD EOS pressure

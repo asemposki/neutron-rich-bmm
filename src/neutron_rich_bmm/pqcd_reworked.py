@@ -23,21 +23,16 @@ class PQCD:
         :Example:
             PQCD(X=1, Nf=2)
 
-        Parameters:
-        -----------
-        
-        X : int
-            The value of the coefficient multiplying mu
-            to determine the renormalization scale. Default is 1,
-            as in Gorda et al. (2023).
+        Parameters:        
+            X (int): The value of the coefficient multiplying mu
+                to determine the renormalization scale. Default is 1,
+                as in Gorda et al. (2023).
 
-        Nf : int
-            The number of different quark flavours being 
-            considered. Default is 2, for SNM. NSM is 3.
+            Nf (int): The number of different quark flavours being 
+                considered. Default is 2, for SNM. NSM is 3.
 
         Returns:
-        --------
-        None.
+            None.
         '''
 
         # initialize constants
@@ -77,17 +72,12 @@ class PQCD:
         density to quark chemical potential. 
         
         Parameters:
-        -----------
-        density : numpy.linspace
-            The density array.
+            density (numpy.linspace): The density array.
             
         Returns:
-        --------
-        mu_FG : numpy.ndarray
-            The FG quark chemical potential. 
+            mu_FG (numpy.ndarray): The FG quark chemical potential. 
         
-        mu_n : numpy.ndarray
-            The quark chemical potential array.
+            mu_n (numpy.ndarray): The quark chemical potential array.
         '''
         
         n0 = 0.164
@@ -115,17 +105,14 @@ class PQCD:
             PQCD.alpha_s(mu, loop=1)
 
         Parameters:
-        -----------
-        mu : numpy.ndarray
-            The quark chemical potential. 
+            mu (numpy.ndarray): The quark chemical potential. 
             
-        loop : int
-            The order at which alpha_s is calculated. Default is 2.
+            loop (int): The order at which alpha_s is calculated.
+                Default is 2.
             
         Returns:
-        --------
-        alpha_s : numpy.ndarray
-            The values of alpha_s at the order requested.
+            alpha_s (numpy.ndarray): The values of alpha_s at 
+                the order requested.
         '''
 
         lambda_bar = 2. * self.X * mu   # X range [1/2, 2]
@@ -157,14 +144,11 @@ class PQCD:
             PQCD.pressure_FG(mu=np.linspace())
 
         Parameters:
-        -----------
-        mu : numpy.linspace
-            The original range in mu.
+            mu (numpy.linspace): The original range in mu.
 
         Returns:
-        --------
-        p_FG : numpy.linspace
-            The zeroth order (LO) contribution the pressure. 
+            p_FG (numpy.linspace): The zeroth order (LO) contribution
+                the pressure. 
         '''
 
         p_FG = (self.Nf * self.Nc * mu**4.0) / (12.0 * np.pi**2.0)  # extremely general form
@@ -184,18 +168,13 @@ class PQCD:
             PQCD.pressure_mu(mu=np.linspace(), order=1)
 
         Parameters:
-        -----------
-        mu : numpy.linspace
-            The original range of mu.
+            mu (numpy.linspace): The original range of mu.
 
-        order : int
-            The order at which the pressure is calculated. Default is 2,
-            options are 1 and 2.
+            order (int): The order at which the pressure is calculated. Default is 2,
+                options are 1 and 2.
 
         Returns:
-        --------
-        pressure : numpy.ndarray
-            The pressure as a function of mu.
+            pressure (numpy.ndarray): The pressure as a function of mu.
         '''
  
         lambda_bar = 2. * self.X * mu     # X range [1/2, 2]
@@ -231,15 +210,11 @@ class PQCD:
         implicitly. Not used in the paper.
         
         Parameters:
-        -----------
-        mu : numpy.ndarray
-            The quark chemical potential.
+            mu (numpy.ndarray): The quark chemical potential.
             
         Returns:
-        --------
-        pressure : numpy.ndarray
-            The value of the pressure at the
-            chemical potentials. 
+            pressure (numpy.ndarray): The value of the pressure at the
+                chemical potentials. 
         '''
         
         lambda_bar = 2.0 * self.X * mu
@@ -275,15 +250,11 @@ class PQCD:
         equation will be: n(mu) = dP0/dmu + dP1/mu + dP2/mu.
 
         Parameters:
-        -----------
-        mu : numpy.ndarray
-            The quark chemical potential. 
+            mu (numpy.ndarray): The quark chemical potential. 
 
         Returns:
-        --------
-        n : numpy.ndarray
-            The array of the number density with respect
-            to the chemical potential.
+            n (numpy.ndarray): The array of the number density with 
+                respect to the chemical potential.
         '''
 
         n_mu = ndt.Derivative(self.pressure_mu, step=0.00001, method='central')
@@ -301,15 +272,11 @@ class PQCD:
         scaling must be taken into account.
 
         Parameters:
-        -----------
-        mu : numpy.ndarray
-            The input chemical potential.
+            mu (numpy.ndarray): The input chemical potential.
 
         Returns:
-        --------
-        n_FG : numpy.ndarray
-            The result of the number density at the input 
-            chemical potential.
+            n_FG (numpy.ndarray): The result of the number density at the input 
+                chemical potential.
         '''
 
         n_FG = self.Nf * mu**3.0 / (np.pi**2.0)
@@ -323,21 +290,15 @@ class PQCD:
         Function to invert n(mu) to obtain mu(n). 
         
         Parameters:
-        -----------
-        n_mu : numpy.array
-            Linspace over n_q for the inversion.
+            n_mu (numpy.array): Linspace over n_q for the inversion.
         
         Returns:
-        --------
-        n_mu : numpy.ndarray
-            The number density. 
+            n_mu (numpy.ndarray): The number density. 
 
-        f_mu_2_new : numpy.array
-            The array corresponding to the inverted function values
-            for mu(n).
+            f_mu_2_new (numpy.array): The array corresponding to the 
+                inverted function values for mu(n).
         
-        f_mu_FG_new : numpy.ndarray
-            The values of the FG chemical potential. 
+            f_mu_FG_new (numpy.ndarray): The values of the FG chemical potential. 
         '''
         
         # write the root finding function
@@ -374,14 +335,10 @@ class PQCD:
         The function to evaluate yref from pQCD.
         
         Parameters:
-        -----------
-        x : numpy.array
-            The quark chemical potential.
+            x (numpy.array): The quark chemical potential.
             
         Returns:
-        --------
-        yref : numpy.2darray
-            The [:,None] array for yref.
+            yref (numpy.2darray): The [:,None] array for yref.
         ''' 
         
         yref = ((self.Nf * self.Nc * x**4.0) / (12.0 * np.pi**2.0))  # FG pressure for any flavour, colour
@@ -397,14 +354,11 @@ class PQCD:
         be substituted.
         
         Parameters:
-        -----------
-        x : numpy.array
-            The quark chemical potential.
+            x (numpy.array): The quark chemical potential.
         
         Returns:
-        --------
-        The value of the expansion parameter at each
-        point in the quark chemical potential array.
+            The value of the expansion parameter at each
+            point in the quark chemical potential array.
         '''
         return (self.Nf * self.alpha_s(x, loop=2)/np.pi)[:,0]
         #return self.alpha_s(x, loop=2)[:,0]  # alpha_s only
@@ -417,14 +371,11 @@ class PQCD:
         The c0 coefficient of pQCD. 
         
         Parameters:
-        -----------
-        x : numpy.array
-            The quark chemical potential.
+            x (numpy.array): The quark chemical potential.
         
         Returns:
-        --------
-        The value of the coefficient at each point
-        in the array.
+            The value of the coefficient at each point
+            in the array.
         '''
         return np.ones(len(x))
     
@@ -435,14 +386,11 @@ class PQCD:
         The c1 coefficient of pQCD. 
         
         Parameters:
-        -----------
-        x : numpy.array
-            The quark chemical potential.
+            x (numpy.array): The quark chemical potential.
         
         Returns:
-        --------
-        The value of the coefficient at each point
-        in the array.
+            The value of the coefficient at each point
+            in the array.
         '''
         return (self.a11*np.ones(len(x))/self.Nf)
         #return (self.a11/np.pi)*np.ones(len(x))  # alpha_s only
@@ -455,14 +403,11 @@ class PQCD:
         The c2 coefficient of pQCD. 
         
         Parameters:
-        -----------
-        x : numpy.array
-            The quark chemical potential.
+            x (numpy.array): The quark chemical potential.
         
         Returns:
-        --------
-        The value of the coefficient at each point
-        in the array.
+            The value of the coefficient at each point
+            in the array.
         '''
         lambda_bar = 2.0 * self.X * x
         one = self.a21 * np.log(self.Nf * self.alpha_s(x, loop=2)/np.pi)
@@ -478,14 +423,11 @@ class PQCD:
         The mu1 term of pQCD. 
         
         Parameters:
-        -----------
-        mu_FG : numpy.array
-            The FG quark chemical potential.
+            mu_FG (numpy.array): The FG quark chemical potential.
         
         Returns:
-        --------
-        The value of mu1 at each point
-        in the array.
+            The value of mu1 at each point
+            in the array.
         '''
         
         mU_FG = mu_FG[:, None]
@@ -501,14 +443,11 @@ class PQCD:
         The mu2 term of pQCD. 
         
         Parameters:
-        -----------
-        mu_FG : numpy.array
-            The FG quark chemical potential.
+            mu_FG (numpy.array): The FG quark chemical potential.
         
         Returns:
-        --------
-        The value of mu2 at each point
-        in the array.
+            The value of mu2 at each point
+            in the array.
         '''
         
         mU_FG = mu_FG[:, None]
@@ -538,15 +477,11 @@ class PQCD:
         inversion. 
         
         Parameters:
-        -----------
-        mu_FG : numpy.array
-            The FG quark chemical potential.
+            mu_FG (numpy.array): The FG quark chemical potential.
             
         Returns:
-        --------
-        pressure_n : dict
-            The values of the pressure from the KLW
-            inversion at LO, NLO, and N2LO.
+            pressure_n (dict): The values of the pressure from the KLW
+                inversion at LO, NLO, and N2LO.
         '''
         
         # mu_FG assignment
@@ -623,22 +558,18 @@ class PQCD:
             PQCD.mask_array(array=mu, fill_value=0)
 
         Parameters:
-        -----------
-        array : numpy.ndarray
-            The array with values to mask. 
+            array (numpy.ndarray): The array with values to mask. 
 
-        neg : bool
-            If False, will not also mask negative values. If True,
-            will check for negative values and mask using current
-            fill value. 
+            neg (bool): If False, will not also mask negative values. If True,
+                will check for negative values and mask using current
+                fill value. 
 
-        fill_value : int, float
-            The value with which to fill the mask. Default is None.
+            fill_value (int, float): The value with which to fill the mask. 
+                Default is None.
 
         Returns:
-        --------
-        masked_array : numpy.ndarray
-            The masked array with or without filled values.
+            masked_array (numpy.ndarray): The masked array with or without 
+                filled values.
         '''
 
         # initialize the mask and new array

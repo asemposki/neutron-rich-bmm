@@ -40,22 +40,17 @@ class PQCD:
             PQCD(mu=np.linspace(), X=1)
 
         Parameters:
-        -----------
-        mu : numpy.linspace
-            Range of values to use for mu. Units: GeV. 
+            mu (numpy.linspace): Range of values to use for mu. Units: GeV. 
         
-        X : int
-            The value of the coefficient multiplying mu
-            to determine the renormalization scale. Default is 2,
-            as in Kurkela et al. (2010).
+            X (int): The value of the coefficient multiplying mu
+                to determine the renormalization scale. Default is 2,
+                as in Kurkela et al. (2010).
 
-        Nf : int
-            The number of different quark flavours being 
-            considered. Default is 3. 
+            Nf (int): The number of different quark flavours being 
+                considered. Default is 3. 
 
         Returns:
-        --------
-        None.
+            None.
         '''
 
         # initialize constants and lambda_bar
@@ -81,18 +76,14 @@ class PQCD:
             PQCD.alpha_s(mu, loop=1)
 
         Parameters:
-        -----------
-        mu : numpy.ndarray
-            The quark chemical potential. 
+            mu (numpy.ndarray): The quark chemical potential. 
             
-        loop : int
-            The order at which alpha_s is calculated. Default is 2.
+            loop (int): The order at which alpha_s is calculated. 
+                Default is 2.
             
         Returns:
-        --------
-        alpha_s : numpy.ndarray
-            The values of alpha_s for the input
-            chemical potential.
+            alpha_s (numpy.ndarray): The values of alpha_s for the input
+                chemical potential.
         '''
 
         lambda_bar = self.X * mu
@@ -124,14 +115,11 @@ class PQCD:
             PQCD.n_FG(mu=np.linspace())
 
         Parameters:
-        -----------
-        mu : numpy.linspace
-            The original mu range. 
+            mu (numpy.linspace): The original mu range. 
 
         Returns:
-        --------
-        n_FG : numpy.ndarray
-            The FG contribution to the number density.
+            n_FG (numpy.ndarray): The FG contribution to the number 
+                density.
         '''
 
         n_FG = (3.0 * mu**3.0) / np.pi**2.0
@@ -149,14 +137,11 @@ class PQCD:
             PQCD.n_1(self, mu=np.linspace())
 
         Parameters:
-        -----------
-        mu : numpy.linspace
-            The original mu range.
+            mu (numpy.linspace): The original mu range.
 
         Returns:
-        --------
-        n_1 : numpy.ndarray
-            The first order contribution to the number density.
+            n_1 (numpy.ndarray): The first order contribution to the 
+                number density.
         '''
 
         n_1 = self.n_FG(mu) * (1.0 - (2.0/np.pi) * self.alpha_s(mu, loop=2))  
@@ -174,14 +159,11 @@ class PQCD:
             PQCD.n_2(mu=np.linspace())
 
         Parameters:
-        -----------
-        mu : numpy.linspace
-            The original mu range.
+            mu (numpy.linspace): The original mu range.
 
         Returns:
-        --------
-        n_2 : numpy.ndarray
-            The second order contribution to the number density.
+            n_2 (numpy.ndarray): The second order contribution to 
+                the number density.
         '''
 
         lambda_bar = self.X * mu
@@ -209,14 +191,11 @@ class PQCD:
             PQCD.pressure_FG(mu=np.linspace())
 
         Parameters:
-        -----------
-        mu : numpy.linspace
-            The original range in mu.
+            mu (numpy.linspace): The original range in mu.
 
         Returns:
-        --------
-        p_FG : numpy.linspace
-            The zeroth order (LO) contribution the pressure. 
+            p_FG (numpy.linspace): The zeroth order (LO) contribution 
+                the pressure. 
         '''
 
         p_FG = (3.0 * mu**4.0) / (4.0 * np.pi**2.0)
@@ -235,18 +214,13 @@ class PQCD:
             PQCD.pressure_mu(mu=np.linspace(), order=1)
 
         Parameters:
-        -----------
-        mu : numpy.linspace
-            The original range of mu.
+            mu (numpy.linspace): The original range of mu.
 
-        order : int
-            The order at which the pressure is calculated. Default is 2,
-            options are 1 and 2.
+            order (int): The order at which the pressure is calculated. 
+                Default is 2, options are 1 and 2.
 
         Returns:
-        --------
-        pressure : numpy.ndarray
-            The pressure as a function of mu.
+            pressure (numpy.ndarray): The pressure as a function of mu.
         '''
  
         lambda_bar = self.X * mu 
@@ -278,14 +252,10 @@ class PQCD:
         FG pressure with respect to number density n.
         
         Parameters:
-        -----------
-        n : numpy.ndarray
-            The baryon number density. 
+            n (numpy.ndarray): The baryon number density. 
             
         Returns:
-        --------
-        p_n_FG : numpy.ndarray
-            The FG pressure as a function of density.
+            p_n_FG (numpy.ndarray): The FG pressure as a function of density.
         '''
 
         p_n_FG = (3.0 / 4.0 * np.pi**2.0) * (n * np.pi**2.0 / 3.0)**(4.0/3.0)
@@ -304,18 +274,16 @@ class PQCD:
             PQCD.pressure_n(n=np.linspace(), alpha_s_mu=None)
 
         Parameters:
-        -----------
-        n : numpy.linspace
-            The range in number density being considered.
+            n (numpy.linspace): The range in number density being 
+                considered.
         
-        alpha_s_mu : numpy.linspace, numpy.ndarray
-            A possible different chemical potential range
-            to send to alpha_s. Default is None.
+            alpha_s_mu (numpy.linspace, numpy.ndarray): A possible 
+                different chemical potential range to send to alpha_s. 
+                Default is None.
             
         Returns:
-        --------
-        p_n : numpy.ndarray
-            The pressure as a function of density, at NLO.
+            p_n (numpy.ndarray): The pressure as a function of density, 
+                at NLO.
         '''
         
         if alpha_s_mu is not None:
@@ -336,18 +304,13 @@ class PQCD:
         paper.
         
         Parameters:
-        -----------
-        n : numpy.ndarray
-            Number density array.
+            n (numpy.ndarray): Number density array.
             
-        mu : numpy.ndarray
-            Corresponding chemical 
-            potential array. 
+            mu (numpy.ndarray): Corresponding chemical 
+                potential array. 
             
         Returns:
-        --------
-        cs2 : numpy.ndarray
-            The speed of sound.
+            cs2 (numpy.ndarray): The speed of sound.
         '''
 
         # mu_FG again
@@ -373,18 +336,13 @@ class PQCD:
         Gorda et al. (2023) including N3LO. 
         
         Parameters:
-        -----------
-        mu : numpy.ndarray
-            The quark chemical potential. 
+            mu (numpy.ndarray): The quark chemical potential. 
         
-        scaled : bool
-            Whether the data is scaled or not. 
-            Default is False. 
+            scaled (bool): Whether the data is scaled or not. 
+                Default is False. 
         
         Returns:
-        --------
-        p_n3lo : numpy.ndarray
-            The pressure at N3LO. 
+            p_n3lo (numpy.ndarray): The pressure at N3LO. 
         '''
 
         # define constants and pieces
@@ -428,22 +386,18 @@ class PQCD:
             PQCD.mask_array(array=mu, fill_value=0)
 
         Parameters:
-        -----------
-        array : numpy.ndarray
-            The array with values to mask. 
+            array (numpy.ndarray): The array with values to mask. 
 
-        neg : bool
-            If False, will not also mask negative values. If True,
-            will check for negative values and mask using current
-            fill value. 
+            neg (bool): If False, will not also mask negative values. If True,
+                will check for negative values and mask using current
+                fill value. 
 
-        fill_value : int, float
-            The value with which to fill the mask. Default is None.
+            fill_value (int, float): The value with which to fill the mask. 
+                Default is None.
 
         Returns:
-        --------
-        masked_array : numpy.ndarray
-            The masked array with or without filled values.
+            masked_array (numpy.ndarray): The masked array with or without 
+                filled values.
         '''
 
         # initialize the mask and new array
@@ -502,30 +456,26 @@ class Kurkela(PQCD):
         function. 
 
         Parameters:
-        -----------
-        mu : numpy.ndarray
-            The linspace in chemical potential with which we started.
+            mu (numpy.ndarray): The linspace in chemical potential with 
+                which we started.
             
-        n_mu : numpy.ndarray
-            The corresponding number density.
+            n_mu (numpy.ndarray): The corresponding number density.
 
-        scaled : bool
-            Toggle to return either scaled pressure (wrt free quark gas)
-            or to return without scaling. Default is True.
+            scaled (bool): Toggle to return either scaled pressure 
+                (wrt free quark gas) or to return without scaling. 
+                Default is True.
         
         Returns:
-        --------
-        mu_array : dict
-            Dictionary of the new mu arrays spanning the integration
-            limits of the pressure integration. 
+            mu_array (dict): Dictionary of the new mu arrays spanning 
+                the integration limits of the pressure integration. 
  
-        pressure_1 : numpy.ndarray
-            The mean value of the pressure at first order for the chosen 
-            chemical potential (or number density) array. 
+            pressure_1 (numpy.ndarray): The mean value of the pressure at 
+                first order for the chosen chemical potential 
+                (or number density) array. 
 
-        pressure_2 : numpy.ndarray
-            The mean value of the pressure at second order for the chosen 
-            chemical potential (or number density) array. 
+            pressure_2 (numpy.ndarray): The mean value of the pressure at 
+                second order for the chosen chemical potential 
+                (or number density) array. 
 
         '''
 
@@ -606,17 +556,12 @@ class Kurkela(PQCD):
         the paper. 
         
         Parameters:
-        -----------
-        mu : numpy.ndarray
-            The chemical potential. 
+            mu (numpy.ndarray): The chemical potential. 
             
-        n : numpy.ndarray
-            The number density.
+            n (numpy.ndarray): The number density.
         
         Returns:
-        --------
-        cs2 : numpy.ndarray
-            The speed of sound. 
+            cs2 (numpy.ndarray): The speed of sound. 
         '''
         import numdifftools as ndt
         
@@ -638,31 +583,25 @@ class Kurkela(PQCD):
         This function uses techniques from the gsum package. 
 
         Parameters:
-        -----------
-        mu : numpy.ndarray
-            The linspace of chemical potential needed.
+            mu (numpy.ndarray): The linspace of chemical potential needed.
         
-        n_orders : int
-            The highest order to which the pressure EOS is calculated.
+            n_orders (int): The highest order to which the pressure EOS 
+                is calculated.
             
-        kernel : obj
-            The kernel needed for the interpolation and truncation GP.
-            Can be fed in from the outside to change parameters.
+            kernel (obj): The kernel needed for the interpolation and 
+                truncation GP. Can be fed in from the outside to change 
+                parameters.
             
-        test : numpy.ndarray
-            Testing array. 
+            test (numpy.ndarray): Testing array. 
         
         Returns:
-        --------
-        data : numpy.ndarray
-            The data array.
+            data (numpy.ndarray): The data array.
         
-        self.coeffs : numpy.ndarray
-            The values of the coefficents at the chemical potential mu.
+            self.coeffs (numpy.ndarray): The values of the coefficents 
+                at the chemical potential mu.
         
-        std_trunc : numpy.ndarray
-            The arrays of truncation errors per each order.
-
+            std_trunc (numpy.ndarray): The arrays of truncation errors 
+                per each order.
         '''
 
 #         # grab the correct mu_array from the pressure
@@ -716,15 +655,12 @@ class Kurkela(PQCD):
         Function to invert n(mu) to obtain mu(n). 
         
         Parameters:
-        -----------
-        n_mu : numpy.array
-            Linspace over n_q for the inversion.
+            n_mu (numpy.array): Linspace over n_q for the inversion.
         
         Returns:
-        --------
-        f_mu_1_result, f_mu_2_result : numpy.array
-            The two arrays corresponding to the inverted function values
-            for mu(n^(1)) and mu(n^(2)). 
+            f_mu_1_result, f_mu_2_result (numpy.array): The two arrays 
+                corresponding to the inverted function values
+                for mu(n^(1)) and mu(n^(2)). 
         '''
         
         # write the root finding function
@@ -766,30 +702,21 @@ class Kurkela(PQCD):
         constructing our truncated GP in the function 'Uncertainties'. 
 
         Parameters:
-        -----------
-        mu : numpy.ndarray
-            The chemical potential linspace needed.
+            mu (numpy.ndarray): The chemical potential linspace needed.
             
-        kernel : obj
-            The kernel needed for the interpolation GP. Can be fed in 
-            from the outside for specific parameter alterations.
+            kernel (obj): The kernel needed for the interpolation GP. Can be fed in 
+                from the outside for specific parameter alterations.
             
-        center : float
-            Value for the center of the prior. 
+            center (float): Value for the center of the prior. 
         
-        sd : float
-            The scale of the prior. 
+            sd (float): The scale of the prior. 
 
         Returns:
-        --------
-        pred : numpy.ndarray
-            An array of predictions from the GP.
+            pred (numpy.ndarray): An array of predictions from the GP.
 
-        std : numpy.ndarray
-            The standard deviation at the points in 'pred'.
+            std (numpy.ndarray): The standard deviation at the points in 'pred'.
 
-        underlying_std : numpy.ndarray
-            The underlying standard deviation of the GP.
+            underlying_std (numpy.ndarray): The underlying standard deviation of the GP.
         '''
 
 #         # grab the correct mu_array from the pressure
@@ -830,15 +757,11 @@ class Kurkela(PQCD):
         and testing data.
 
         Parameters:
-        -----------
-        mu : numpy.ndarray
-            The chemical potential linspace needed.
+            mu (numpy.ndarray): The chemical potential linspace needed.
 
         Returns:
-        --------
-        self.mask : numpy.ndarray
-            The mask for use when interpolating or using the 
-            truncated GP.
+            self.mask (numpy.ndarray): The mask for use when interpolating 
+                or using the truncated GP.
         '''
         
         # mask for values above 40*n0 only 
@@ -864,14 +787,11 @@ class Kurkela(PQCD):
         coefficients and for predicting the truncation error bands.
 
         Parameters:
-        -----------
-        None.
+            None.
 
         Returns:
-        --------
-        self.kernel : sklearn object
-            The kernel needed for the GPs in both 'uncertainties' and 
-            'gp_interpolation'. 
+            self.kernel (sklearn object): The kernel needed for the GPs 
+                in both 'uncertainties' and 'gp_interpolation'. 
         '''
 
         self.ls = 0.496    # starting guess; can get really close if we set 0.25 and fix it
@@ -890,14 +810,10 @@ class Kurkela(PQCD):
         LO coefficent for the pQCD EOS using Kurkela formalism.
 
         Parameters:
-        -----------
-        mu : numpy.ndarray
-            The chemical potential for the pQCD EOS.
+            mu (numpy.ndarray): The chemical potential for the pQCD EOS.
 
         Returns:
-        --------
-        np.ones(len(mu)) : numpy.ndarray
-            The leading order coefficient. 
+            np.ones(len(mu)) (numpy.ndarray): The leading order coefficient. 
         '''
 
         return np.ones(len(mu))
@@ -909,13 +825,10 @@ class Kurkela(PQCD):
         formalism. 
         
         Parameters:
-        -----------
-        mu : numpy.ndarray
-            The quark chemical potential array.
+            mu (numpy.ndarray): The quark chemical potential array.
         
         Returns:
-        --------
-        The value of the coefficient. 
+            The value of the coefficient. 
         '''
 
         # reshape the mu array for yref
@@ -940,13 +853,10 @@ class Kurkela(PQCD):
         formalism. 
         
         Parameters:
-        -----------
-        mu : numpy.ndarray
-            The quark chemical potential. 
+            mu (numpy.ndarray): The quark chemical potential. 
         
         Returns:
-        --------
-        The value of the coefficient. 
+            The value of the coefficient. 
         '''
 
         # reshape the mu array again
@@ -971,15 +881,11 @@ class Kurkela(PQCD):
         The reference for the expansion. 
         
         Parameters:
-        -----------
-        mu : numpy.ndarray
-            The quark chemical potential.
+            mu (numpy.ndarray): The quark chemical potential.
         
         Returns:
-        ---------
-        yref : numpy.ndarray
-            The values of yref at the given
-            chemical potentials. 
+            yref (numpy.ndarray): The values of yref at the given
+                chemical potentials. 
         '''
         
         # scaling
@@ -998,13 +904,10 @@ class Kurkela(PQCD):
         the Kurkela formalism. 
         
         Parameters:
-        -----------
-        mu : numpy.ndarray
-            The quark chemical potentials. 
+            mu (numpy.ndarray): The quark chemical potentials. 
             
         Returns:
-        ---------
-        The value of expQ at the chosen potentials. 
+            The value of expQ at the chosen potentials. 
         '''
 
         return self.pqcd_root.alpha_s(mu, loop=2)[:,0]
@@ -1018,14 +921,11 @@ class Kurkela(PQCD):
         the limits of our integration for the pressure.
 
         Parameters:
-        -----------
-        None.
+            None.
 
         Returns:
-        --------
-        [root1, root2] : numpy.array
-            The roots of the first and second order number
-            densities in the chemical potential. 
+            [root1, root2] (numpy.array): The roots of the first and 
+                second order number densities in the chemical potential. 
         '''
 
         # set the linspace needed to solve precisely for the root
@@ -1053,14 +953,10 @@ class Kurkela(PQCD):
         to find the root.
         
         Parameters:
-        ------------
-        mu : numpy.ndarray
-            The quark chemical potentials. 
+            mu (numpy.ndarray): The quark chemical potentials. 
             
         Returns:
-        --------
-        n : numpy.ndarray
-            The number density array. 
+            n (numpy.ndarray): The number density array. 
         '''
 
         # set up the function
@@ -1075,14 +971,10 @@ class Kurkela(PQCD):
         to find the root.
         
         Parameters:
-        ------------
-        mu : numpy.ndarray
-            The quark chemical potentials. 
+            mu (numpy.ndarray): The quark chemical potentials. 
             
         Returns:
-        --------
-        n : numpy.ndarray
-            The number density. 
+            n (numpy.ndarray): The number density. 
         '''
 
         # set up the function
