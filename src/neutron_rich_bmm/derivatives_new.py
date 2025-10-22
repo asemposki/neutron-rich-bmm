@@ -17,21 +17,14 @@ from gptools import Kernel, ConstantMeanFunction, SquaredExponentialKernel, Gaus
 class CustomKernel(Kernel):
     """A Custom GPTools kernel that wraps an arbitrary function f with a compatible signature
 
-    Parameters
-    ----------
-    f : callable
-        A positive semidefinite kernel function that takes f(Xi, Xj, ni, nj) where ni and nj are
-        integers for the number of derivatives to take with respect to Xi or Xj. It should return
-        an array of Xi.shape[0]
-    transform : callable
-        The transformation to apply to X before passing it to f. Derivatives will not take this into account via
-        the chain rule.
-    *args
-        Args passed to the Kernel class
-    **kwargs
-        Kwargs passed to the Kernel class
+    Parameters:
+        f (callable): A positive semidefinite kernel function that takes f(Xi, Xj, ni, nj) where ni and nj are
+            integers for the number of derivatives to take with respect to Xi or Xj. It should return
+            an array of Xi.shape[0]
+    
+        transform (callable): The transformation to apply to X before passing it to f. Derivatives will not take this into account via
+            the chain rule.
     """
-
 
     def __init__(self, f, transform=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -141,14 +134,13 @@ def kernel_scale_sympy(
 ):
     """Creates a sympy object that is the convergence part of the GP kernel
 
-    Parameters
-    ----------
-    lowest_order
-    highest_order
-    include_3bf
-    k_f1_scale
-    k_f2_scale
-    off_diag
+    Parameters:
+        lowest_order
+        highest_order
+        include_3bf
+        k_f1_scale
+        k_f2_scale
+        off_diag
     """
     from sympy import sqrt
     k_f1_orig, k_f2_orig, y_ref, Lambda_b, = symbols('k_f1 k_f2 y_ref Lambda_b')
@@ -193,17 +185,16 @@ def eval_kernel_scale(Xi, Xj=None, ni=None, nj=None, breakdown=600, ref=16, lowe
     """Creates a matrix for the convergence part of the GP kernel.
     Compatible with the CustomKernel class signature.
 
-    Parameters
-    -----------
-    Xi
-    Xj
-    ni
-    nj
-    breakdown
-    ref
-    lowest_order
-    highest_order
-    include_3bf
+    Parameters:
+        Xi
+        Xj
+        ni
+        nj
+        breakdown
+        ref
+        lowest_order
+        highest_order
+        include_3bf
     """
     if ni is None:
         ni = 0
@@ -329,23 +320,18 @@ def get_std_map(cov_map):
 def compute_mean_cov_blm(X, y, Sigma_y=0, mean0=0, cov0=0):
     R"""Estimate parameters of the Bayesian Linear Model
 
-    Parameters
-    ----------
-    X : array-like, shape = (N, n_params)
-        The feature matrix
-    y : array-like, shape = (N,)
-        The data
-    Sigma_y : int or array-like, shape = (N, N)
-        The data covariance
-    mean0 : int or array-like, shape = (n_params, n_params)
-        The prior mean on the polynomial coefficients
-    cov0 : int or array-like, shape = (n_params, n_params)
-        The prior covariance on the polynomial coefficients. If zero, the prior is uninformative
+    Parameters:
+        X (array-like, shape = (N, n_params)): The feature matrix
+        y (array-like, shape = (N,)): The data
+        Sigma_y (int or array-like, shape = (N, N)): The data covariance
+        mean0 (int or array-like, shape = (n_params, n_params)): The prior mean 
+            on the polynomial coefficients
+        cov0 (int or array-like, shape = (n_params, n_params)): The prior 
+            covariance on the polynomial coefficients. If zero, the prior is uninformative
 
-    Returns
-    -------
-    mean : array-like
-    cov : array-like
+    Returns:
+        mean (array-like)
+        cov (array-like)
     """
     ones_y = np.ones(y.shape[0], dtype=float)
     ones_n_params = np.ones(X.shape[-1], dtype=float)
@@ -628,21 +614,17 @@ class ObservableContainer:
         the mask, if desired.
 
         Parameters:
-        -----------
-        array : numpy.ndarray
-            The array with values to mask. 
+            array (numpy.ndarray): The array with values to mask. 
             
-        cov : bool
-            Whether to use a multi-dimensional mask or not (for the
-            covariances). Default is False. 
+            cov (bool): Whether to use a multi-dimensional mask or not (for the
+                covariances). Default is False. 
 
-        fill_value : int, float
-            The value with which to fill the mask. Default is None.
+            fill_value (int, float): The value with which to fill the mask. 
+                Default is None.
 
         Returns:
-        --------
-        masked_array : numpy.ndarray
-            The masked array with or without filled values.
+            masked_array (numpy.ndarray): The masked array with or without 
+                filled values.
         '''
         
         # initialize the mask and new array
@@ -730,17 +712,16 @@ class ObservableContainer:
     def predict(self, X, order, derivs=None, include_trunc=True):
         """Predict from the GP
 
-        Parameters
-        ----------
-        X : array
-            The variable taken by the GP, which is the fermi momentum Kf.
-        order
-        derivs
-        include_trunc
+        Parameters:
+            X (array): The variable taken by the GP, which is the 
+                fermi momentum Kf.
+            order
+            derivs
+            include_trunc
 
-        Returns
-        -------
-
+        Returns:
+            y_interp
+            cov
         """
         if derivs is None:
             derivs = self.derivs
