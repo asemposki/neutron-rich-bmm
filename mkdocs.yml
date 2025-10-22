@@ -63,7 +63,6 @@ plugins:
           paths:
             - src
           options:
-            docstring_style: numpy
             show_source: true
             show_bases: false
             show_docstring_parameters: true
