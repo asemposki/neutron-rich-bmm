@@ -32,10 +32,10 @@ class Chiral_model(BaseModel):
                 EOS. Default is None, which will make the chiral EOS
                 default to the original data density range. 
             
-        Lambda (int): The value of the cutoff chosen. Can be either
+            Lambda (int): The value of the cutoff chosen. Can be either
                 450 MeV or 500 MeV. 
 
-        high_density (bool): Whether we want to use high-density data or not.
+            high_density (bool): Whether we want to use high-density data or not.
                 Default is True. Sets up the data for interpolation
                 in the chiral EOS class. 
         
