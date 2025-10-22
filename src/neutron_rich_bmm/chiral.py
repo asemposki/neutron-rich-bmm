@@ -52,22 +52,17 @@ class Chiral:
         (450, 500) is also made here. 
 
         Parameters:
-        -----------
-        density_input : numpy.linspace
-            The density regime for the chiral EOS. Default is set below 
-            in the code. 
+            density_input (numpy.linspace): The density regime for the chiral 
+                EOS. Default is set below in the code. 
 
-        Lambda : int
-            The desired cutoff to use. Default is 500; either
-            450 or 500 MeV may currently be chosen. 
+            Lambda (int): The desired cutoff to use. Default is 500; either
+                450 or 500 MeV may currently be chosen. 
 
-        high_density : bool 
-            Decision to use high density data or not.
-            Default is True. 
+            high_density (bool): Decision to use high density data or not.
+                Default is True. 
 
         Returns:
-        --------
-        None.
+            None.
         '''
 
         # set cutoff
@@ -187,27 +182,23 @@ class Chiral:
         symmetric nuclear matter, and the symmetry energy calculation.
 
         Parameters:
-        -----------
-        density_int : numpy.ndarray
-            The interpolated number density values from the mu(n) inversion.
-            Default is None; this will leave the container to use the 
-            original interpolated density_all. 
+            density_int (numpy.1darray): The interpolated number density values 
+                from the mu(n) inversion.
+                Default is None; this will leave the container to use the 
+                original interpolated density_all. 
 
-        kf_s_int : numpy.ndarray
-            The interpolated Fermi momenta for SNM. This will be replaced
-            when calculating the inverted density and chemical potential.
-            Default is None; this will leave the container to use the
-            original interpolated kf_s. 
+            kf_s_int (numpy.1darray): The interpolated Fermi momenta for SNM. This will be replaced
+                when calculating the inverted density and chemical potential.
+                Default is None; this will leave the container to use the
+                original interpolated kf_s. 
             
-        extend: bool
-            Whether or not to extend the data using the mean function 
-            estimation and extending the truncation error. Default is False.
+            extend (bool): Whether or not to extend the data using the mean 
+                function estimation and extending the truncation error. Default is False.
 
         Returns:
-        --------
-        self.obs_neutron, self.obs_nuclear, self.obs_sym_energy : objects
-            The objects that contain the important interpolation information
-            for the chiral EFT EOS for PNM, SNM, and the symmetry energy. 
+            self.obs_neutron, self.obs_nuclear, self.obs_sym_energy (objects):
+                The objects that contain the important interpolation information
+                for the chiral EFT EOS for PNM, SNM, and the symmetry energy. 
         '''
 
         setup_time_start = time.time()
@@ -293,25 +284,20 @@ class Chiral:
         errors from gsum. 
 
         Parameters:
-        -----------
-        add_rest_mass : bool
-            If desired, will add the rest mass to the energy per
-            particle. 
+            add_rest_mass (bool): If desired, will add the rest mass to the energy per
+                particle. 
 
-        orders : str
-            Command to determine whether we use all orders for the EFT or
-            just one of them. Default is 'all', but 'N3LO' will convert
-            to only one EFT at N3LO. 
+            orders (str): Command to determine whether we use all orders for the EFT or
+                just one of them. Default is 'all', but 'N3LO' will convert
+                to only one EFT at N3LO. 
 
         Returns:
-        --------
-        self.energies_s, self.energy_s_stds : numpy.ndarray
-            The energy per particle (E/A) and standard deviation of E/A.
+            self.energies_s, self.energy_s_stds (numpy.ndarray): The energy per 
+                particle (E/A) and standard deviation of E/A.
 
-        if add_rest_mass is True:
-        self.energies_s_mn, self.energy_s_stds : numpy.ndarray
-            E/A (inclusive of the rest mass) and the standard deviation 
-            of E/A. 
+            self.energies_s_mn, self.energy_s_stds (numpy.ndarray): E/A (inclusive of 
+            the rest mass) and the standard deviation of E/A. This is returned if
+            add_rest_mass is True.
         '''
         
         if case == 'SNM':
@@ -374,16 +360,13 @@ class Chiral:
         adding the rest mass is included here. 
 
         Parameters:
-        -----------
-        orders : str
-            Command to determine how many orders in the EFT expansion
-            to calculate. Default is 'all', but can be set to 'N3LO' to
-            only return that one.
+            orders (str): Command to determine how many orders in the EFT 
+                expansion to calculate. Default is 'all', but can be set to 
+                'N3LO' to only return that one.
 
         Returns:
-        --------
-        self.pressure_s, self.pressure_s_stds : numpy.ndarray
-            The pressure and standard deviation of the pressure. 
+            self.pressure_s, self.pressure_s_stds (numpy.ndarray): The 
+                pressure and standard deviation of the pressure. 
         '''
 
         if matter == 'SNM':
@@ -503,19 +486,16 @@ class Chiral:
         density of the chiral EOS. Adds rest mass if desired. 
 
         Parameters:
-        -----------
-        add_rest_mass : bool
-            The option to include the rest mass in the E/A (and in the 
-            energy density). 
+            add_rest_mass (bool): The option to include the rest mass in 
+                the E/A (and in the energy density). 
 
-        orders : str
-            Option to either calculate all orders ('all') or only N3LO
-            ('N3LO'). Default is 'all'.
+            orders (str): Option to either calculate all orders ('all') or 
+                only N3LO ('N3LO'). Default is 'all'.
 
         Returns:
-        --------
-        self.energy_density, self.energy_density_s_stds : numpy.ndarray
-            The energy density and standard deviation of the energy density.
+            self.energy_density, self.energy_density_s_stds (numpy.ndarray):
+                The energy density and standard deviation of the energy 
+                density.
         '''
 
         # if rest_mass is true, add it and compute
@@ -582,21 +562,16 @@ class Chiral:
         preserved. 
 
         Parameters:
-        ------------
-        method : int
-            The type of calculation to obtain the chemical potential. 
-            1 : (P+eps)/n
-            2 : d(eps)/dn
-            Default is 1. 
+            method (int): The type of calculation to obtain the chemical 
+                potential. Possibilities include: 1 = (P+eps)/n and 
+                2 = d(eps)/dn. Default is 1. 
 
-        add_rest_mass : bool
-            Adds the rest mass to the energy per particle if desired. 
-            Default is False. 
+            add_rest_mass (bool): Adds the rest mass to the energy per 
+                particle if desired. Default is False. 
         
         Returns:
-        --------
-        self.mu_s, self.mu_s_stds : numpy.ndarray
-            The chemical potential and std dev for the chiral EOS, wrt n. 
+            self.mu_s, self.mu_s_stds (numpy.ndarray): The chemical 
+                potential and std dev for the chiral EOS, wrt n. 
         '''
 
         # call the energy_density function and tell it rest mass choice
@@ -660,32 +635,25 @@ class Chiral:
     def inversion(self, guess=0.33):
 
         '''
-        *** Need clever way to rewrite this inversion scheme for the 
-        input space we'll need to implement the BMM process. *** 
-
         Inverts the function mu(n) in favour of n(mu). For Lambda = 500 MeV,
         able to use the fsolve function to do this. For Lambda = 450 MeV,
         must manually invert. ***Note: because of this, the range of mu is 
         not the same for both cases of Lambda. 
 
         Parameters:
-        -----------
-        guess : float
-            The guess for the fsolve function to invert for Lambda = 500 MeV.
-            If using Lambda = 450 MeV, this argument is ignored. 
-            Default is 0.33. 
+            guess (float): The guess for the fsolve function to invert for 
+                Lambda = 500 MeV. If using Lambda = 450 MeV, this argument 
+                is ignored. Default is 0.33. 
 
         Returns:
-        --------
-        self.density_mu_N3LO : numpy.ndarray
-            The array in density that we obtain from inversion. 
+            self.density_mu_N3LO (numpy.ndarray): The array in density that 
+                we obtain from inversion. 
 
-        self.mu_array_N3LO : numpy.ndarray
-            The inverted chemical potential array. 
+            self.mu_array_N3LO (numpy.ndarray): The inverted chemical potential 
+                array. 
 
-        self.kf_N3LO : numpy.ndarray
-            The new array in kf for the observable container once mu has been 
-            inverted. 
+            self.kf_N3LO (numpy.ndarray): The new array in kf for the observable 
+                container once mu has been inverted. 
         '''
 
         # set interpolation space outside of cutoff dependence
@@ -778,29 +746,23 @@ class Chiral:
         for Lambda = 500 MeV. 
 
         Parameters:
-        -----------
-        n : numpy.ndarray
-            The array of densities that we currently possess.
+            n (numpy.ndarray): The array of densities that we currently
+                possess.
         
-        mu : numpy.ndarray
-            The array of chemical potential values for the range
-            of densities in n.
+            mu (numpy.ndarray): The array of chemical potential values 
+                for the range of densities in n.
 
-        guess : float
-            The guess for fsolve. Default is 0.33.
+            guess (float): The guess for fsolve. Default is 0.33.
 
-        nnew : numpy.ndarray
-            The values for the new array in density. Default is None.
+            nnew (numpy.ndarray): The values for the new array in density. 
+                Default is None.
 
         Returns:
-        --------
-        mu_new : numpy.ndarray
-            Array of mu results at new points in density. 
+            mu_new (numpy.ndarray): Array of mu results at new points 
+                in density. 
             
-        f_n_result : numpy.ndarray
-            The results of the root finding wrt the new
-            chemical potential array.
-
+            f_n_result (numpy.ndarray): The results of the root finding wrt 
+                the new chemical potential array.
         '''
     
         # interpolate the arrays
@@ -826,19 +788,16 @@ class Chiral:
         fsolve function to invert mu(n) to n(mu).
 
         Parameters:
-        -----------
-        mu : float
-            The current value in the chemical potential to be 
-            inverted.
+            mu (float): The current value in the chemical potential 
+                to be inverted.
 
-        mu_func : function
-            The function from interp1d that is to be solved for n.
+            mu_func (function): The function from interp1d that is 
+                to be solved for n.
 
-        guess : float
-            The guess for fsolve to find a root. Default is 0.33. 
+            guess (float): The guess for fsolve to find a root. 
+                Default is 0.33. 
 
         Returns:
-        --------
             The value of n with respect to the given values of the 
             chemical potential. 
         '''

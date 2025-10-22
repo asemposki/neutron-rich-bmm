@@ -28,24 +28,19 @@ class Chiral_model(BaseModel):
         Model class to give Taweret to mix. 
 
         Parameters:
-        -----------
-        density : numpy.array
-            The density specified for calculation of the chiral
-            EOS. Default is None, which will make the chiral EOS
-            default to the original data density range. 
+            density (numpy.array): The density specified for calculation of the chiral
+                EOS. Default is None, which will make the chiral EOS
+                default to the original data density range. 
             
-        Lambda : int
-            The value of the cutoff chosen. Can be either
-            450 MeV or 500 MeV. 
+        Lambda (int): The value of the cutoff chosen. Can be either
+                450 MeV or 500 MeV. 
 
-        high_density : bool 
-            Whether we want to use high-density data or not.
-            Default is True. Sets up the data for interpolation
-            in the chiral EOS class. 
+        high_density (bool): Whether we want to use high-density data or not.
+                Default is True. Sets up the data for interpolation
+                in the chiral EOS class. 
         
         Returns:
-        --------
-        None.
+            None.
         '''
 
         # set class variables
@@ -63,37 +58,28 @@ class Chiral_model(BaseModel):
 
         '''
         Returns the mean and standard deviation of the chiral EFT EOS
-        in terms of pressure wrt baryon chemical potential.
-
-        Mean: calculated from the chiral EFT EOS formalism of
-              C. Drischler et al. (2021). 
-
-        Standard deviation: calculated via the truncation error
-                            models in the gsum package, used in
-                            the chiral EOS paper.
+        in terms of pressure wrt baryon chemical potential. The mean is calculated 
+        from the chiral EFT EOS formalism of C. Drischler et al. (2021). The 
+        standard deviation is calculated via the truncation error models in the gsum 
+        package, used in the chiral EOS paper.
 
         Parameters:
-        -----------
-        input_space : numpy.array
-            The input space array. Not actually necessary for this 
-            function but necessary for Taweret. 
+            input_space (numpy.array): The input space array. Not actually necessary 
+                for this function but necessary for Taweret. 
             
-        N3LO : bool
-            If True, returns only the N3LO results for mean and std_dev.
-            Otherwise will return all results up to and through N3LO.
+            N3LO (bool): If True, returns only the N3LO results for mean and std_dev.
+                Otherwise will return all results up to and through N3LO.
             
-        scaled : bool
-            If the data is scaled, then this is True. Else, it is False.
-            Default is True.
+            scaled (bool): If the data is scaled, then this is True. Else, it is False.
+                Default is True.
             
-        extend : bool
-            Extends the data to higher truncation values. Default is
-            False.
+            extend (bool): Extends the data to higher truncation values. Default is
+                False.
 
         Returns:
-        --------
-        mean, std_dev : numpy.ndarray
-            The mean and standard deviation of the pressure. 
+            mean (numpy.1darray): The mean of the pressure. 
+
+            std_dev (numpy.1darray): The standard deviation of the pressure.
         '''
         
         # correct for input_space (for now)

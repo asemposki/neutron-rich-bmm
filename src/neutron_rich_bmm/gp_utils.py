@@ -26,43 +26,32 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
     def fit(self, X, y, priors=True, prior_choice='truncnorm', prior_type=None, switch=None, cutoff=40, max_iter=None):
         """Fit Gaussian process regression model.
 
-        Parameters
-        ----------
-        X : array-like of shape (n_samples, n_features) or list of object
-            Feature vectors or other representations of training data.
+        Parameters:
+            X (array-like of shape (n_samples, n_features) or list of object): Feature vectors or other representations of training data.
 
-        y : array-like of shape (n_samples,) or (n_samples, n_targets)
-            Target values.
+            y (array-like of shape (n_samples,) or (n_samples, n_targets)): Target values.
         
-        priors: bool
-            The choice of using priors on the hyperparameters.
-            Default is True.
+            priors (bool): The choice of using priors on the hyperparameters. Default is True.
             
-        prior_choice: str
-            The choice of which type of prior to use on the length scale.
-            Default is 'truncnorm'; other options are 'skewnorm' and 
-            'uniform'.
+            prior_choice (str): The choice of which type of prior to use on the length scale.
+                Default is 'truncnorm'; other options are 'skewnorm' and 
+                'uniform'.
 
-        prior_type : dict
-            The type of prior we want to use on the hyperparameters when
-            in a situation where more than one hyperparameter will be
-            optimized, or when we do not want to use a log normal prior
-            on the chosen hyperparameter in the changepoint kernel. This
-            also takes in the switching function type; currently options 
-            are 'tanh' and 'sigmoid'. 
+            prior_type (dict): The type of prior we want to use on the hyperparameters when
+                in a situation where more than one hyperparameter will be
+                optimized, or when we do not want to use a log normal prior
+                on the chosen hyperparameter in the changepoint kernel. This
+                also takes in the switching function type; currently options 
+                are 'tanh' and 'sigmoid'. 
 
-        switch : str
-            If using a changepoint kernel, specify which switching function
-            you are using.
+            switch (str): If using a changepoint kernel, specify which switching function
+                you are using.
             
-        cutoff : int
-            The toggle for which pQCD cutoff we are using. 
-            Default is 40.
+            cutoff (int):The toggle for which pQCD cutoff we are using. 
+                Default is 40.
             
-        Returns
-        -------
-        self : object
-            GaussianProcessRegressor class instance.
+        Returns:
+            self (object): GaussianProcessRegressor class instance.
         """
         
         # assign class variables
@@ -213,31 +202,24 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
     ):
         """Return log-marginal likelihood of theta for training data.
 
-        Parameters
-        ----------
-        theta : array-like of shape (n_kernel_params,) default=None
-            Kernel hyperparameters for which the log-marginal likelihood is
-            evaluated. If None, the precomputed log_marginal_likelihood
-            of ``self.kernel_.theta`` is returned.
+        Parameters:
+            theta (array-like of shape (n_kernel_params,) default=None): Kernel hyperparameters for which the log-marginal likelihood is
+                evaluated. If None, the precomputed log_marginal_likelihood
+                of ``self.kernel_.theta`` is returned.
 
-        eval_gradient : bool, default=False
-            If True, the gradient of the log-marginal likelihood with respect
-            to the kernel hyperparameters at position theta is returned
-            additionally. If True, theta must not be None.
+            eval_gradient (bool, default=False): If True, the gradient of the log-marginal likelihood with respect
+                to the kernel hyperparameters at position theta is returned
+                additionally. If True, theta must not be None.
 
-        clone_kernel : bool, default=True
-            If True, the kernel attribute is copied. If False, the kernel
-            attribute is modified, but may result in a performance improvement.
+            clone_kernel (bool, default=True): If True, the kernel attribute is copied. If False, the kernel
+                attribute is modified, but may result in a performance improvement.
 
-        Returns
-        -------
-        log_likelihood : float
-            Log-marginal likelihood of theta for training data.
+        Returns:
+            log_likelihood (float): Log-marginal likelihood of theta for training data.
 
-        log_likelihood_gradient : ndarray of shape (n_kernel_params,), optional
-            Gradient of the log-marginal likelihood with respect to the kernel
-            hyperparameters at position theta.
-            Only returned when eval_gradient is True.
+            log_likelihood_gradient (ndarray of shape (n_kernel_params,), optional): Gradient of the log-marginal likelihood with respect to the kernel
+                hyperparameters at position theta.
+                Only returned when eval_gradient is True.
         """
         if theta is None:
             if eval_gradient:
@@ -673,24 +655,17 @@ class GaussianProcessRegressor2dNoise(GaussianProcessRegressor):
     def _check_optimize_result(self, solver, result, max_iter=None, extra_warning_msg=None):
         """Check the OptimizeResult for successful convergence
 
-        Parameters
-        ----------
-        solver : str
-           Solver name. Currently only `lbfgs` is supported.
+        Parameters:
+            solver (str): Solver name. Currently only `lbfgs` is supported.
 
-        result : OptimizeResult
-           Result of the scipy.optimize.minimize function.
+            result (OptimizeResult): Result of the scipy.optimize.minimize function.
 
-        max_iter : int, default=None
-           Expected maximum number of iterations.
+            max_iter (int, default=None): Expected maximum number of iterations.
 
-        extra_warning_msg : str, default=None
-            Extra warning message.
+            extra_warning_msg (str, default=None): Extra warning message.
 
-        Returns
-        -------
-        n_iter : int
-           Number of iterations.
+        Returns:
+            n_iter (int): Number of iterations.
         """
         # handle both scipy and scikit-learn solver names
         if solver == "lbfgs":

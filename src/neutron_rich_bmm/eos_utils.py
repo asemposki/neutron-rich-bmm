@@ -29,27 +29,20 @@ def gp_data(data_xeft, data_pqcd, cutoff=40, all_orders=True, matter='SNM', kern
     Used for the BMM when a GP is the method of choice.
     
     Parameters:
-    -----------
-    data_xeft : dict
-        The dictionary of densities, means, and variances
-        of the Chiral EFT data.
+        data_xeft (dict): The dictionary of densities, means, 
+            and variances of the Chiral EFT data.
     
-    data_pqcd : dict
-        The dictionary of densities, means, and variances 
-        of the pQCD data.
+        data_pqcd (dict): The dictionary of densities, means, 
+            and variances of the pQCD data.
     
-    cutoff : int
-        The scaled density cutoff we are using for
-        pQCD data.
+        cutoff (int): The scaled density cutoff we are using for
+            pQCD data.
         
-    all_orders : bool
-        Toggle if data is more than one-dimensional.
-        Default is True.
+        all_orders (bool): Toggle if data is more than one-dimensional.
+            Default is True.
     
     Returns:
-    --------
-    training_set : dict
-        The dictionary of selected training data 
+        training_set (dict): The dictionary of selected training data 
         concatenated from both EOSs.
     '''
     
@@ -214,58 +207,49 @@ def speed_of_sound(dens, pressure, edens=None, sat=False, bounds=68, integrate='
     density integration. 
 
     Parameters:
-    -----------
-    dens : numpy 1d array
-        The number density of the system.
-    pressure : dict
-        The dictonary of pressure means
-        and standard deviations from the system.
-    edens : dict
-        The dictionary of energy density 
-        means and standard deviations for a 
-        specific starting point in density.
-    sat : bool
-        Starting at saturation density (0.16 fm^-3)
-        or not. Default is False.
-    integrate : str
-        Decision to integrate forward or backward.
-        Default is 'forward'.
-    sampled: bool
-        If using samples from the speed of sound, run
-        the std and mean using nanmean and nanstd from
-        numpy instead of computing envelopes.
-        Default is 'False'. 
+        dens (numpy 1d array): The number density of the system.
+        
+        pressure (dict): The dictonary of pressure means
+            and standard deviations from the system.
+    
+        edens (dict): The dictionary of energy density 
+            means and standard deviations for a 
+            specific starting point in density.
+    
+        sat (bool): Starting at saturation density 
+            (0.16 fm^-3) or not. Default is False.
+    
+        integrate (str): Decision to integrate forward or backward.
+            Default is 'forward'.
+    
+        sampled (bool): If using samples from the speed of sound, run
+            the std and mean using nanmean and nanstd from
+            numpy instead of computing envelopes.
+            Default is 'False'. 
     
     Returns:
-    --------
-    cs2 : dict
-        The dictonary of results for the 
-        speed of sound (calculated using 1\mu dP/dn)
-        and the lower and upper bounds of it at 
-        one sigma, returned when sampled is True.
+        cs2 (dict): The dictonary of results for the 
+            speed of sound (calculated using 1\mu dP/dn)
+            and the lower and upper bounds of it at 
+            one sigma, returned when sampled is True.
         
-    edens_full : dict
-        The energy density dictionary of means and
-        variances returned when sampled is True.
+        edens_full (dict): The energy density dictionary of means and
+            variances returned when sampled is True.
         
-    dens_arr : numpy.ndarray
-        The densities corresponding to the 
-        speed of sound calculation (if sat is True, 
-        this will reflect from saturation up), returned
-        when sampled is False.
+        dens_arr (numpy.ndarray): The densities corresponding to the 
+            speed of sound calculation (if sat is True, 
+            this will reflect from saturation up), returned
+            when sampled is False.
         
-    cs2_log : dict
-        The dict of speed of sound values from using
-        the n * dlog(mu)/dn method. Returned when 
-        sampled is False.
+        cs2_log (dict): The dict of speed of sound values from using
+            the n * dlog(mu)/dn method. Returned when 
+            sampled is False.
+            
+        edens_int (dict): The dict of energy densities, returned when 
+            sampled is False.
         
-    edens_int : dict
-        The dict of energy densities, returned when 
-        sampled is False.
-        
-    mu_dict : dict
-        The dict of chemical potential values, returned
-        when sampled is False.
+        mu_dict (dict): The dict of chemical potential values, returned
+            when sampled is False.
     '''
 
     # check for saturation point integration
@@ -647,31 +631,24 @@ def boundary_conditions(dens, pres_dict, index=0):
     from the pQCD results. 
     
     Parameters:
-    -----------
-    dens : numpy.ndarray
-        The density array as input to find the BCs.
+        dens (numpy.ndarray): The density array as 
+            input to find the BCs.
     
-    pres_dict : dict
-        The dictionary of pressure values 
-        corresponding to the input density array.
+        pres_dict (dict): The dictionary of pressure values 
+            corresponding to the input density array.
     
     Returns:
-    --------
-    mu_FG : numpy.ndarray
-        The 1-d array of chemical potentials
-        corresponding to the values of density that
-        were input. 
+        mu_FG (numpy.ndarray): The 1-d array of chemical potentials
+            corresponding to the values of density that
+            were input. 
         
-    mU_FG : numpy.ndarray
-        The array of shape [:,None] that is
-        used in the gsum truncation error
-        analysis. 
+        mU_FG (numpy.ndarray): The array of shape [:,None] that is
+            used in the gsum truncation error
+            analysis. 
         
-    edens_dict : dict
-        The energy density values at the chosen
-        density index, used as the BCs for the 
-        speed of sound calculation.
-    
+        edens_dict (dict): The energy density values at the chosen
+            density index, used as the BCs for the 
+            speed of sound calculation.
     '''
     
     # call pQCD class
@@ -756,16 +733,12 @@ def pal_eos(kf):
     to be used as a mean function in the GP for chiral EFT.
     
     Parameters:
-    -----------
-    kf : numpy.ndarray
-        The Fermi momentum to be used to calculate PAL for
-        the energy per particle.
+        kf (numpy.ndarray): The Fermi momentum to be used to calculate PAL for
+            the energy per particle.
         
     Returns:
-    --------
-    enperpart_kf : numpy.ndarray
-        The energy per particle, in terms of the
-        Fermi momentum.
+        enperpart_kf (numpy.ndarray): The energy per particle, in terms of the
+            Fermi momentum.
     '''
     
     # extract coupling constants from cc dict
@@ -823,15 +796,11 @@ def pressure_pal_eos(kf):
     The PAL EOS pressure calculation.
     
     Parameters:
-    -----------
-    kf : numpy.ndarray
-        The Fermi momentum.
+        kf (numpy.ndarray): The Fermi momentum  .
     
     Returns:
-    --------
-    pressure_kf : numpy.ndarray
-        The pressure in terms of the Fermi
-        momentum.
+        pressure_kf (numpy.ndarray): The pressure in terms of the Fermi
+            momentum.
     '''
     
     # calculate n first again (so we don't have to pass it in)
@@ -865,26 +834,19 @@ def get_linear_mask_in_log_space(x, x_min, x_max, log_x_step, base=np.e):
     J. A. Melendez.
     
     Parameters:
-    -----------
-    x : numpy.ndarray
-        Array of x values.
+        x (numpy.ndarray): Array of x values.
         
-    x_min : float
-        Min x value.
+        x_min float): Min x value.
     
-    x_max : float
-        Max x value.
+        x_max (float): Max x value.
         
-    log_x_step : float
-        The step size.
+        log_x_step (float): The step size.
         
-    base : float
-        The base of the log we are using. Default
-        is natural log (np.e). 
+        base (float): The base of the log we are using. Default
+            is natural log (np.e). 
         
     Returns:
-    --------
-    The linear mask in the logarithmic space.
+        The linear mask in the logarithmic space.
     
     '''
     lin_x = np.arange(
